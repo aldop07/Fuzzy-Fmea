@@ -71,9 +71,9 @@ nilai_fmea_ctrl = ctrl.ControlSystem(rules)
 nilai_fmea = ctrl.ControlSystemSimulation(nilai_fmea_ctrl)
 
 # Masukkan nilai-nilai FMEA yang ingin Anda fuzzifikasi
-nilai_fmea.input['nilai_occurrence'] = 3
-nilai_fmea.input['nilai_severity'] = 2
-nilai_fmea.input['nilai_detectability'] = 2
+nilai_fmea.input['nilai_occurrence'] = st.number_input(0)
+nilai_fmea.input['nilai_severity'] = st.number_input(0)
+nilai_fmea.input['nilai_detectability'] = st.number_input(0)
 
 # Jalankan simulasi
 nilai_fmea.compute()
@@ -81,4 +81,4 @@ nilai_fmea.compute()
 # Dapatkan hasil fuzzifikasi
 print("Nilai RPN setelah fuzzifikasi:", nilai_fmea.output['nilai_rpn'])
 o = nilai_occurrence.view()
-plt.show(o)
+st.pyplot(0)

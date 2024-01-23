@@ -4,10 +4,10 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
 # Inisialisasi variabel FMEA
-nilai_occurrence = ctrl.Antecedent(np.arange(0, 10), 'nilai_occurrence')
-nilai_severity = ctrl.Antecedent(np.arange(0, 10), 'nilai_severity')
-nilai_detectability = ctrl.Antecedent(np.arange(0, 10), 'nilai_detectability')
-nilai_rpn = ctrl.Consequent(np.arange(0, 10), 'nilai_rpn')
+nilai_occurrence = ctrl.Antecedent(np.arange(0, 10, 1), 'nilai_occurrence')
+nilai_severity = ctrl.Antecedent(np.arange(0, 10,1), 'nilai_severity')
+nilai_detectability = ctrl.Antecedent(np.arange(0, 10,1), 'nilai_detectability')
+nilai_rpn = ctrl.Consequent(np.arange(0, 10,1), 'nilai_rpn')
 
 # Fungsi keanggotaan untuk variabel input1 (Probability of occurrence)
 nilai_occurrence['low'] = fuzz.trimf(nilai_occurrence.universe, [0, 0, 5])

@@ -83,11 +83,3 @@ nilai_fmea.compute()
 # Tampilkan hasil fuzzifikasi
 st.write("Nilai RPN setelah fuzzifikasi:", nilai_fmea.output['nilai_rpn'])
 
-
-# Defuzzifikasi
-#hasil_defuzzifikasi = fuzz.defuzz(nilai_rpn.universe, nilai_fmea.output['nilai_rpn'].values, 'mean_of_maximum')
-
-# Tampilkan hasil defuzzifikasi
-#st.write("Hasil defuzzifikasi:", hasil_defuzzifikasi)
-
-

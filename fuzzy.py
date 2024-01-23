@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-import matplotlib.pyplot as plt
 
 # Inisialisasi variabel FMEA
 nilai_occurrence = ctrl.Antecedent(np.arange(0, 10), 'nilai_occurrence')
@@ -34,51 +33,62 @@ nilai_rpn['very_high'] = fuzz.trimf(nilai_rpn.universe, [7.5, 10, 10])
 
 # Atur aturan fuzzy menggunakan IF-THEN
 # Aturan 1-27
-rules = [
-    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['low'] & nilai_detectability['low']), nilai_rpn['very_low']),
-    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['low'] & nilai_detectability['medium']), nilai_rpn['very_low']),
-    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['low'] & nilai_detectability['high']), nilai_rpn['low']),
-    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['medium'] & nilai_detectability['low']), nilai_rpn['low']),
-    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['medium'] & nilai_detectability['medium']), nilai_rpn['low']),
-    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['medium'] & nilai_detectability['high']), nilai_rpn['medium']),
-    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['high'] & nilai_detectability['low']), nilai_rpn['medium']),
-    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['high'] & nilai_detectability['medium']), nilai_rpn['medium']),
-    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['high'] & nilai_detectability['high']), nilai_rpn['high']),
-    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['low'] & nilai_detectability['low']), nilai_rpn['low']),
-    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['low'] & nilai_detectability['medium']), nilai_rpn['low']),
-    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['low'] & nilai_detectability['high']), nilai_rpn['medium']),
-    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['medium'] & nilai_detectability['low']), nilai_rpn['medium']),
-    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['medium'] & nilai_detectability['medium']), nilai_rpn['medium']),
-    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['medium'] & nilai_detectability['high']), nilai_rpn['high']),
-    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['high'] & nilai_detectability['low']), nilai_rpn['medium']),
-    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['high'] & nilai_detectability['medium']), nilai_rpn['high']),
-    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['high'] & nilai_detectability['high']), nilai_rpn['high']),
-    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['low'] & nilai_detectability['low']), nilai_rpn['medium']),
-    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['low'] & nilai_detectability['medium']), nilai_rpn['medium']),
-    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['low'] & nilai_detectability['high']), nilai_rpn['high']),
-    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['medium'] & nilai_detectability['low']), nilai_rpn['high']),
-    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['medium'] & nilai_detectability['medium']), nilai_rpn['high']),
-    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['medium'] & nilai_detectability['high']), nilai_rpn['very_high']),
-    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['high'] & nilai_detectability['low']), nilai_rpn['high']),
-    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['high'] & nilai_detectability['medium']), nilai_rpn['very_high']),
-    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['high'] & nilai_detectability['high']), nilai_rpn['very_high']),
-]
+rules1 =     ctrl.Rule((nilai_severity['low'] & nilai_occurrence['low'] & nilai_detectability['low']), nilai_rpn['very_low'])
+rules2 =    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['low'] & nilai_detectability['medium']), nilai_rpn['very_low'])
+rules3 =    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['low'] & nilai_detectability['high']), nilai_rpn['low'])
+rules4 =    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['medium'] & nilai_detectability['low']), nilai_rpn['low'])
+rules5 =    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['medium'] & nilai_detectability['medium']), nilai_rpn['low'])
+rules6 =    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['medium'] & nilai_detectability['high']), nilai_rpn['medium'])
+rules7 =    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['high'] & nilai_detectability['low']), nilai_rpn['medium'])
+rules8 =    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['high'] & nilai_detectability['medium']), nilai_rpn['medium'])
+rules9 =    ctrl.Rule((nilai_severity['low'] & nilai_occurrence['high'] & nilai_detectability['high']), nilai_rpn['high'])
+rules10 =    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['low'] & nilai_detectability['low']), nilai_rpn['low'])
+rules11 =    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['low'] & nilai_detectability['medium']), nilai_rpn['low'])
+rules12 =    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['low'] & nilai_detectability['high']), nilai_rpn['medium'])
+rules13 =    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['medium'] & nilai_detectability['low']), nilai_rpn['medium'])
+rules14 =    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['medium'] & nilai_detectability['medium']), nilai_rpn['medium'])
+rules15 =    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['medium'] & nilai_detectability['high']), nilai_rpn['high'])
+rules16 =    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['high'] & nilai_detectability['low']), nilai_rpn['medium'])
+rules17 =    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['high'] & nilai_detectability['medium']), nilai_rpn['high'])
+rules18 =    ctrl.Rule((nilai_severity['medium'] & nilai_occurrence['high'] & nilai_detectability['high']), nilai_rpn['high'])
+rules19 =    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['low'] & nilai_detectability['low']), nilai_rpn['medium'])
+rules20 =    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['low'] & nilai_detectability['medium']), nilai_rpn['medium'])
+rules21 =    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['low'] & nilai_detectability['high']), nilai_rpn['high'])
+rules22 =    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['medium'] & nilai_detectability['low']), nilai_rpn['high'])
+rules23 =    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['medium'] & nilai_detectability['medium']), nilai_rpn['high'])
+rules24 =    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['medium'] & nilai_detectability['high']), nilai_rpn['very_high'])
+rules25 =    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['high'] & nilai_detectability['low']), nilai_rpn['high'])
+rules26 =    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['high'] & nilai_detectability['medium']), nilai_rpn['very_high'])
+rules27 =    ctrl.Rule((nilai_severity['high'] & nilai_occurrence['high'] & nilai_detectability['high']), nilai_rpn['very_high'])
 
 # Tambahkan aturan-atur ini ke sistem kontrol
-nilai_fmea_ctrl = ctrl.ControlSystem(rules)
+nilai_fmea_ctrl = ctrl.ControlSystem([rules1,rules2,rules3,rules4,rules5,rules6,rules7,rules8,rules9,rules10,rules11,rules12,rules13,rules14,rules15,rules16,rules17,rules18,rules19,rules20,rules21,rules22,rules23,rules24,rules25,rules26,rules27])
 
 # Buat objek sistem kontrol dan simulasi
 nilai_fmea = ctrl.ControlSystemSimulation(nilai_fmea_ctrl)
 
 # Masukkan nilai-nilai FMEA yang ingin Anda fuzzifikasi
-nilai_fmea.input['nilai_occurrence'] = st.number_input(0)
-nilai_fmea.input['nilai_severity'] = st.number_input(0)
-nilai_fmea.input['nilai_detectability'] = st.number_input(0)
+nilai_occurrence_value = st.number_input('masukan nilai O', 0)
+nilai_severity_value = st.number_input('masukan nilai S', 0)
+nilai_detectability_value = st.number_input('masukan nilai D', 0)
 
-# Jalankan simulasi
-nilai_fmea.compute()
+# Set nilai input pada sistem kontrol dan simulasi
+nilai_fmea.input['nilai_occurrence'] = nilai_occurrence_value
+nilai_fmea.input['nilai_severity'] = nilai_severity_value
+nilai_fmea.input['nilai_detectability'] = nilai_detectability_value
 
 # Dapatkan hasil fuzzifikasi
-print("Nilai RPN setelah fuzzifikasi:", nilai_fmea.output['nilai_rpn'])
+nilai_fmea.compute()
+
+# Tampilkan hasil fuzzifikasi
+st.write("Nilai RPN setelah fuzzifikasi:", nilai_fmea.output['nilai_rpn'])
+
+
 o = nilai_occurrence.view()
-st.pyplot(0)
+st.pyplot(o)
+d = nilai_detectability.view()
+st.pyplot(d)
+s = nilai_severity.view()
+st.pyplot(s)
+rpn = nilai_rpn.view()
+st.pyplot(rpn)

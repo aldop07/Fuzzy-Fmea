@@ -82,7 +82,7 @@ nilai_fmea.compute()
 
 # Tampilkan hasil fuzzifikasi
 st.write("Nilai RPN setelah fuzzifikasi:", nilai_fmea.output['nilai_rpn'])
-st.set_option('deprecation.showPyplotGlobalUse', False)
+
 
 # Defuzzifikasi
 #hasil_defuzzifikasi = fuzz.defuzz(nilai_rpn.universe, nilai_fmea.output['nilai_rpn'].values, 'mean_of_maximum')
@@ -90,11 +90,4 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 # Tampilkan hasil defuzzifikasi
 #st.write("Hasil defuzzifikasi:", hasil_defuzzifikasi)
 
-o = nilai_occurrence.view()
-st.pyplot(o)
-d = nilai_detectability.view()
-st.pyplot(d)
-s = nilai_severity.view()
-st.pyplot(s)
-rpn = nilai_rpn.view()
-st.pyplot(rpn)
+

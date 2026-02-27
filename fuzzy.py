@@ -93,9 +93,10 @@ import pandas as pd
 
 JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
 if JMATERIAL == 'Pipe':
-  SCH = st.selectbox('SCH', ['10','20', '30', '40', '60', '80"', '100'])
+  SCH = st.selectbox('SCH', ['10','20', '30', '40', '60', '80', '100'])
   NPS = st.selectbox('NPS', ['1/2"','1"', '1 1/2"', '2"', '2 1/2"', '3"', '4"'])
   JPOTONG = st.text_input('Masukan Jumlah yang akan dipotong')
+
 
 
 

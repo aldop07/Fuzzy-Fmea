@@ -91,8 +91,5 @@ import numpy as np
 import streamlit as st
 import pandas as pd
 
-zona = pytz.timezone('Asia/Jakarta')
-tanggal = datetime.now(zona).date()
-jam = datetime.now(zona).strftime("%H:%M:%S")
-
 menu = st.sidebar.selectbox('', ['Akun','Produk', 'Transaksi', 'Keuangan', 'Data Mining'])
+

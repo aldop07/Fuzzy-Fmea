@@ -91,8 +91,11 @@ import numpy as np
 import streamlit as st
 import pandas as pd
 
-st.selectbox('', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
-JPOTONG = st.text_input('Masukan Jumlah yang akan dipotong')
+JMATERIAL = st.selectbox('', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
+if JMATERIAL == "Pipe";
+  NPS = st.selectbox('', ['1/2"','1"', '1 1/2"', '2"', '2 1/2"', '3"', '4"'])
+    JPOTONG = st.text_input('Masukan Jumlah yang akan dipotong')
+
 
 
 

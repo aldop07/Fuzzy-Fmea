@@ -91,5 +91,6 @@ import numpy as np
 import streamlit as st
 import pandas as pd
 
-menu = st.sidebar.selectbox('', ['Akun','Produk', 'Transaksi', 'Keuangan', 'Data Mining'])
+menu = st.selectbox('', ['Akun','Produk', 'Transaksi', 'Keuangan', 'Data Mining'])
+
 

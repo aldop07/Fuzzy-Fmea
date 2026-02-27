@@ -90,7 +90,8 @@
 import numpy as np
 import streamlit as st
 import pandas as pd
-
-menu = st.selectbox('', ['Akun','Produk', 'Transaksi', 'Keuangan', 'Data Mining'])
+st.s
+st.selectbox('', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
+JPOTONG = st.text_input('Masukan Jumlah yang akan dipotong')
 
 

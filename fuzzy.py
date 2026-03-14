@@ -156,8 +156,32 @@ if CCALCULATE == 'CUTTING DISC':
                 st.warning("Data SCH tidak tersedia untuk ukuran ini")
 
 elif CCALCULATE == 'GRINDING DISC':
-    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
-    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
+
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate','UNP','WF','H BEAM'])
+
+    if JMATERIAL == 'Pipe':
+
+        NPS = st.selectbox('NPS', [
+            '1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
+            '3 1/2','4','5','6','8','10','12','14','16','18','20','22',
+            '24','26','28','30'
+        ])
+
+        SCH = st.selectbox('SCH', ['10','20','30','40','60','80'])
+
+        JJOINT = st.number_input('Jumlah Joint Beveling', min_value=0)
+
+        if st.button('HITUNG'):
+
+            kapasitas_disc = 5   # 1 disc = 5 joint bevel 60°
+
+            kebutuhan_disc = JJOINT / kapasitas_disc
+            kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
+
+            st.write(f"Jumlah Joint : {JJOINT}")
+            st.write(f"Kapasitas Grinding Disc : 5 joint / pcs")
+            st.write(f"Kebutuhan Grinding Disc : {kebutuhan_disc:,.2f} pcs")
+            st.write(f"Kebutuhan Aktual : {kebutuhan_disc_bulat} pcs")
 
 elif CCALCULATE == 'FLAP DISC':
     # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC

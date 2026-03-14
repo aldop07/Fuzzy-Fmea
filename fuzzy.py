@@ -220,9 +220,78 @@ elif CCALCULATE == 'GRINDING DISC':
 
             else:
                 st.warning("Data SCH tidak tersedia untuk ukuran NPS ini di database")
-elif CCALCULATE == 'FLAP DISC':
-    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
-    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
+elif CCALCULATE == 'BUFFING DISC':
+
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate'])
+
+    if JMATERIAL == 'Pipe':
+
+        NPS = st.selectbox('NPS', [
+            '1/8','1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
+            '3 1/2','4','5','6','8','10','12','14','16','18','20'
+        ])
+
+        SCH = st.selectbox('SCH', ['10','20','30','40','60','80'])
+
+        JBUFFING = st.number_input('Jumlah Joint yang di-Buffing', min_value=0)
+
+        if st.button('HITUNG BUFFING'):
+
+            # Data Pipa Lengkap berdasarkan tabel gambar 1 & 3
+            data_pipe = {
+                "1/8":  {"OD": 10.3,  "40": 6.8,   "80": 4.8},
+                "1/4":  {"OD": 13.7,  "40": 9.2,   "80": 7.7},
+                "3/8":  {"OD": 17.1,  "40": 12.5,  "80": 10.7},
+                "1/2":  {"OD": 21.3,  "40": 15.8,  "80": 13.9},
+                "3/4":  {"OD": 26.7,  "40": 21.0,  "80": 18.9},
+                "1":    {"OD": 33.4,  "40": 26.6,  "80": 24.3},
+                "1 1/4": {"OD": 42.2,  "40": 35.1,  "80": 32.5},
+                "1 1/2": {"OD": 48.3,  "40": 40.9,  "80": 38.1},
+                "2":    {"OD": 60.3,  "40": 52.5,  "80": 49.3},
+                "2 1/2": {"OD": 73.0,  "40": 62.7,  "80": 59.0},
+                "3":    {"OD": 88.9,  "40": 77.9,  "80": 73.7},
+                "3 1/2": {"OD": 101.6, "40": 90.1,  "80": 85.4},
+                "4":    {"OD": 114.3, "10": 108.2, "30": 104.7, "40": 102.26, "80": 97.18},
+                "5":    {"OD": 141.3, "40": 128.2, "80": 122.24},
+                "6":    {"OD": 168.3, "40": 154.08, "80": 146.36},
+                "8":    {"OD": 219.1, "10": 211.58, "20": 206.4, "30": 205.02, "40": 202.74, "60": 198.48, "80": 193.7},
+                "10":   {"OD": 273.1, "10": 266.3, "20": 260.3, "30": 257.5, "40": 254.5, "60": 247.7, "80": 242.9},
+                "12":   {"OD": 323.9, "10": 317.5, "20": 311.1, "30": 307.1, "40": 304.8, "60": 298.5, "80": 288.9},
+                "20":   {"OD": 508.0, "10": 495.3, "20": 488.94, "30": 482.6, "40": 477.82, "80": 455.62}
+            }
+
+            pipe = data_pipe.get(NPS)
+
+            if pipe and SCH in pipe:
+
+                OD = pipe["OD"]
+                ID = pipe[SCH]
+                T = (OD - ID) / 2 # Tebal pipa
+
+                # Perhitungan Luas Area Buffing (Keliling Pipa * Panjang Miring Bevel)
+                # Panjang miring (hypotenuse) bevel 30 derajat = T / cos(30)
+                panjang_miring = T / math.cos(math.radians(30))
+                area_buffing_per_joint = (math.pi * OD) * panjang_miring
+                total_area = area_buffing_per_joint * JBUFFING
+
+                # Kapasitas 1 buffing/flap disc (Data: 1 disc = 10 joint pipa 4" SCH 40)
+                # Kita hitung luas referensi dari 10 joint pipa 4" SCH 40
+                ref_OD = 114.3
+                ref_T = (114.3 - 102.26) / 2
+                area_ref_1_joint = (math.pi * ref_OD) * (ref_T / math.cos(math.radians(30)))
+                area_disc_buffing = area_ref_1_joint * 10 # Total kapasitas area per flap disc
+
+                kebutuhan_disc = total_area / area_disc_buffing
+                kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
+
+                st.success(f"Hasil Analisis Buffing {NPS}\" SCH {SCH}")
+                st.write(f"Area buffing per joint : {area_buffing_per_joint:,.2f} mm2")
+                st.write(f"Total area buffing : {total_area:,.2f} mm2")
+                st.write(f"Kebutuhan flap disc : {kebutuhan_disc:,.2f} pcs")
+                st.write(f"*Kebutuhan aktual : {kebutuhan_disc_bulat} pcs*")
+
+            else:
+                st.warning("Data SCH tidak tersedia untuk ukuran NPS ini di database")
     
 elif CCALCULATE == 'FILLER WELD':
     # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC

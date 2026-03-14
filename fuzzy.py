@@ -149,104 +149,40 @@ elif CCALCULATE == 'COATING':
         SCH = st.selectbox('SCH', ['10','20', '30', '40', '60', '80', '100'])
         NPS = st.selectbox('NPS', ['1/2"','1"', '1 1/2"', '2"', '2 1/2"', '3"', '4"'])
         JPANJANG = st.number_input('Masukan Jumlah panjang yang akan di coating', min_value=0)
-        
+            
         if st.button('HITUNG'):
-            
-             if NPS == '1/2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
-                keliling_pipe = 66.882
-                coating = 2613024          # mm2 kapasitas 1kg
-                
-                total_luas = JPANJANG * keliling_pipe
-                kebutuhan_cat = total_luas / coating
-                
-                kebutuhan_coating = math.ceil(kebutuhan_cat)
-                
-                st.write(f"Total Luas Coating : {total_luas:,.2f} mm2")
-                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
-                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
-                
-            if NPS == '1"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
-                keliling_pipe = 108.876
-                coating = 2613024          # mm2 kapasitas 1kg
-                
-                total_luas = JPANJANG * keliling_pipe
-                kebutuhan_cat = total_luas / coating
-                
-                kebutuhan_coating = math.ceil(kebutuhan_cat)
-                
-                st.write(f"Total Luas Coating : {total_luas:,.2f} mm2")
-                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
-                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
 
-            if NPS == '1 1/2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
-                keliling_pipe = 151.662
-                coating = 2613024          # mm2 kapasitas 1kg
-                
-                total_luas = JPANJANG * keliling_pipe
-                kebutuhan_cat = total_luas / coating
-                
-                kebutuhan_coating = math.ceil(kebutuhan_cat)
-                
-                st.write(f"Total Luas Coating : {total_luas:,.2f} mm2")
-                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
-                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
-    
-                
-            if NPS == '2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
-                keliling_pipe = 189.342
-                coating = 2613024          # mm2 kapasitas 1kg
-                
-                total_luas = JPANJANG * keliling_pipe
-                kebutuhan_cat = total_luas / coating
-                
-                kebutuhan_coating = math.ceil(kebutuhan_cat)
-                
-                st.write(f"Total Luas Coating : {total_luas:,.2f} mm2")
-                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
-                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
+            # database keliling pipe
+            keliling_data = {
+                '1/2"'  : 66.882,
+                '1"'    : 108.876,
+                '1 1/2"': 151.662,
+                '2"'    : 189.342,
+                '2 1/2"': 229.2,
+                '3"'    : 279.146,
+                '4"'    : 358.902
+            }
 
-            if NPS == '2 1/2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
-                keliling_pipe = 229.2
-                coating = 2613024          # mm2 kapasitas 1kg
-                
-                total_luas = JPANJANG * keliling_pipe
-                kebutuhan_cat = total_luas / coating
-                
-                kebutuhan_coating = math.ceil(kebutuhan_cat)
-                
-                st.write(f"Total Luas Coating : {total_luas:,.2f} mm2")
-                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
-                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
+            if SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
 
+                keliling_pipe = keliling_data.get(NPS)
 
-            if NPS == '3"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
-                keliling_pipe = 279.146
-                coating = 2613024          # mm2 kapasitas 1kg
-                
-                total_luas = JPANJANG * keliling_pipe
-                kebutuhan_cat = total_luas / coating
-                
-                kebutuhan_coating = math.ceil(kebutuhan_cat)
-                
-                st.write(f"Total Luas Coating : {total_luas:,.2f} mm2")
-                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
-                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
+                if keliling_pipe:
 
+                    coating = 2613024
 
-           if NPS == '4"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
-                keliling_pipe = 358.902
-                coating = 2613024          # mm2 kapasitas 1kg
-                
-                total_luas = JPANJANG * keliling_pipe
-                kebutuhan_cat = total_luas / coating
-                
-                kebutuhan_coating = math.ceil(kebutuhan_cat)
-                
-                st.write(f"Total Luas Coating : {total_luas:,.2f} mm2")
-                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
-                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
-            
+                    total_luas = JPANJANG * keliling_pipe
+                    kebutuhan_cat = total_luas / coating
+                    kebutuhan_coating = math.ceil(kebutuhan_cat)
+
+                    st.write(f"Total Luas Coating : {format_indo(total_luas)} mm2")
+                    st.write(f"Kebutuhan Coating : {format_indo(kebutuhan_cat)} kg")
+                    st.write(f"Kebutuhan Aktual : {format_indo_int(kebutuhan_coating)} kg")
+
+                else:
+                    st.warning("Data ukuran pipe tidak ditemukan")
+
             else:
-                st.warning("Data luas belum tersedia untuk ukuran ini")
+                st.warning("Data coating belum tersedia untuk kombinasi ini")
 
 

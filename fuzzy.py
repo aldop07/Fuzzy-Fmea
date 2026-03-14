@@ -306,7 +306,7 @@ elif CCALCULATE == "FILLER WELD":
 
         JJOINT = st.number_input('Jumlah Joint Pengelasan', min_value=0, value=2)
 
-        if st.button('HITUNG WELDING'):
+        if st.button('HITUNG'):
             # Database dimensi pipa (sama dengan referensi Anda)
             data_pipe = {
                 "4": {"OD": 114.3, "40": 102.26, "80": 97.18},

@@ -220,7 +220,7 @@ elif CCALCULATE == 'GRINDING DISC':
 
             else:
                 st.warning("Data SCH tidak tersedia untuk ukuran NPS ini di database")
-elif CCALCULATE == 'BUFFING DISC':
+elif CCALCULATE == 'FLAP DISC':
 
     JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate'])
 

@@ -307,10 +307,27 @@ elif CCALCULATE == "FILLER WELD":
         JJOINT = st.number_input('Jumlah Joint Pengelasan', min_value=0, value=2)
 
         if st.button('HITUNG'):
-            # Database dimensi pipa (sama dengan referensi Anda)
+            # Database dimensi pipa (Lengkap untuk mendukung perhitungan)
             data_pipe = {
-                "4": {"OD": 114.3, "40": 102.26, "80": 97.18},
-                # Tambahkan NPS lain di sini jika diperlukan untuk welding
+                "1/8":  {"OD": 10.3,  "40": 6.8,   "80": 4.8},
+                "1/4":  {"OD": 13.7,  "40": 9.2,   "80": 7.7},
+                "3/8":  {"OD": 17.1,  "40": 12.5,  "80": 10.7},
+                "1/2":  {"OD": 21.3,  "40": 15.8,  "80": 13.9},
+                "3/4":  {"OD": 26.7,  "40": 21.0,  "80": 18.9},
+                "1":    {"OD": 33.4,  "40": 26.6,  "80": 24.3},
+                "1 1/4": {"OD": 42.2,  "40": 35.1,  "80": 32.5},
+                "1 1/2": {"OD": 48.3,  "40": 40.9,  "80": 38.1},
+                "2":    {"OD": 60.3,  "40": 52.5,  "80": 49.3},
+                "2 1/2": {"OD": 73.0,  "40": 62.7,  "80": 59.0},
+                "3":    {"OD": 88.9,  "40": 77.9,  "80": 73.7},
+                "3 1/2": {"OD": 101.6, "40": 90.1,  "80": 85.4},
+                "4":    {"OD": 114.3, "10": 108.2, "30": 104.7, "40": 102.26, "80": 97.18},
+                "5":    {"OD": 141.3, "40": 128.2, "80": 122.24},
+                "6":    {"OD": 168.3, "40": 154.08, "80": 146.36},
+                "8":    {"OD": 219.1, "10": 211.58, "20": 206.4, "30": 205.02, "40": 202.74, "60": 198.48, "80": 193.7},
+                "10":   {"OD": 273.1, "10": 266.3, "20": 260.3, "30": 257.5, "40": 254.5, "60": 247.7, "80": 242.9},
+                "12":   {"OD": 323.9, "10": 317.5, "20": 311.1, "30": 307.1, "40": 304.8, "60": 298.5, "80": 288.9},
+                "20":   {"OD": 508.0, "10": 495.3, "20": 488.94, "30": 482.6, "40": 477.82, "80": 455.62}
             }
 
             pipe = data_pipe.get(NPS)
@@ -319,11 +336,10 @@ elif CCALCULATE == "FILLER WELD":
                 # --- LOGIKA PERHITUNGAN BERDASARKAN REFERENSI USER ---
                 # Referensi: 2 Joint, 4" Sch 40 -> 0.6 kg Filler & 300 psi Argon
                 
-                # 1. Hitung Volume Las Referensi (untuk perbandingan ukuran lain)
+                # 1. Hitung Volume Las Referensi (V-Groove 60 deg)
                 ref_OD = 114.3
                 ref_ID = 102.26
                 ref_T = (ref_OD - ref_ID) / 2
-                # Luas penampang las sederhana (V-Groove 60 deg)
                 ref_area = (ref_T**2) * math.tan(math.radians(30)) 
                 ref_volume_total = (math.pi * ref_OD) * ref_area * 2 # untuk 2 joint
                 
@@ -332,20 +348,24 @@ elif CCALCULATE == "FILLER WELD":
                 current_ID = pipe[SCH]
                 current_T = (current_OD - current_ID) / 2
                 current_area = (current_T**2) * math.tan(math.radians(30))
-                current_volume_total = (math.pi * current_OD) * current_area * JJOINT
+                volume_mm3 = (math.pi * current_OD) * current_area * JJOINT
+                volume_cm3 = volume_mm3 / 1000 # Konversi ke cm3 (cc)
 
                 # 3. Rasio Perbandingan terhadap Referensi
-                ratio = current_volume_total / ref_volume_total
+                ratio = volume_mm3 / ref_volume_total
 
-                # 4. Kalkulasi Kebutuhan (0.6kg filler & 300psi argon per 2 joint 4" Sch 40)
+                # 4. Kalkulasi Kebutuhan
                 filler_needed = 0.6 * ratio
                 argon_needed = 300 * ratio
 
-                # Menghitung berat per batang (Asumsi ER70S-6 dia 2.4mm +/- 0.04kg/btg)
+                # Menghitung berat per batang (Asumsi ER70S-6 dia 2.4mm +/- 0.044kg/btg)
                 batang_filler = math.ceil(filler_needed / 0.044)
 
+                # --- OUTPUT ---
+                st.success(f"Analisis Hasil Pengelasan: {NPS}\" SCH {SCH}")
+                st.write(f"Volume Pengelasan (Total): {volume_cm3:.2f} cm3")
                 st.write("Filler Rod (kg)", f"{filler_needed:.3f} kg")
-                st.write(f"Estimasi: *{batang_filler} batang* (dia 2.4mm)")
+                st.write(f"Estimasi: {batang_filler} batang (dia 2.4mm)")
                 st.write("Argon Consumption", f"{argon_needed:.1f} PSI")
 
             else:

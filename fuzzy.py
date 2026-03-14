@@ -165,7 +165,7 @@ elif CCALCULATE == 'COATING':
                 st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
                 st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
                 
-            elif NPS == '1"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
+            if NPS == '1"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
                 keliling_pipe = 108.876
                 coating = 2613024          # mm2 kapasitas 1kg
                 
@@ -178,7 +178,7 @@ elif CCALCULATE == 'COATING':
                 st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
                 st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
 
-            elif NPS == '1 1/2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
+            if NPS == '1 1/2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
                 keliling_pipe = 151.662
                 coating = 2613024          # mm2 kapasitas 1kg
                 
@@ -192,7 +192,7 @@ elif CCALCULATE == 'COATING':
                 st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
     
                 
-            elif NPS == '2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
+            if NPS == '2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
                 keliling_pipe = 189.342
                 coating = 2613024          # mm2 kapasitas 1kg
                 
@@ -205,7 +205,7 @@ elif CCALCULATE == 'COATING':
                 st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
                 st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
 
-            elif NPS == '2 1/2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
+            if NPS == '2 1/2"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
                 keliling_pipe = 229.2
                 coating = 2613024          # mm2 kapasitas 1kg
                 
@@ -219,7 +219,7 @@ elif CCALCULATE == 'COATING':
                 st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
 
 
-            elif NPS == '3"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
+            if NPS == '3"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
                 keliling_pipe = 279.146
                 coating = 2613024          # mm2 kapasitas 1kg
                 
@@ -233,7 +233,7 @@ elif CCALCULATE == 'COATING':
                 st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
 
 
-           elif NPS == '4"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
+           if NPS == '4"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
                 keliling_pipe = 358.902
                 coating = 2613024          # mm2 kapasitas 1kg
                 

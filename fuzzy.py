@@ -167,7 +167,7 @@ elif CCALCULATE == 'GRINDING DISC':
 
         JBEVEL = st.number_input('Jumlah Joint yang di-Bevel', min_value=0)
 
-        if st.button('HITUNG GRINDING'):
+        if st.button('HITUNG'):
 
             # Data Pipa Lengkap berdasarkan tabel gambar
             data_pipe = {
@@ -384,7 +384,7 @@ elif CCALCULATE == "FILLER WELD":
     
             JJOINT = st.number_input('Jumlah Joint Pengelasan', min_value=0, value=2)
     
-            if st.button('HITUNG SMAW'):
+            if st.button('HITUNG'):
                 # Database dimensi pipa
                 data_pipe = {
                     "1/8":  {"OD": 10.3,  "40": 6.8,   "80": 4.8},
@@ -438,7 +438,6 @@ elif CCALCULATE == "FILLER WELD":
                     batang_filler = math.ceil(filler_needed / 0.035)
     
                     # --- OUTPUT ---
-                    st.success(f"Analisis Hasil Pengelasan MMA / SMAW: {NPS}\" SCH {SCH}")
                     st.write(f"Volume Pengelasan (Total): {volume_mm3:,.2f} mm3")
                     st.write("Filler Metal / Electrode (kg)", f"{filler_needed:.3f} kg")
                     st.write(f"Estimasi: *{batang_filler} batang* (Electrode 3.2mm)")

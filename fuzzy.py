@@ -95,34 +95,65 @@ import math
 CCALCULATE = st.selectbox('CONSUMABLE CALCULATE', ['CUTTING DISC','GRINDING DISC', 'FLAP DISC', 'FILLER WELD', 'ARGON', 'COATING'])
 
 if CCALCULATE == 'CUTTING DISC':
-    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
-    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
-    
+
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate','UNP','WF','H BEAM'])
+
     if JMATERIAL == 'Pipe':
-        
-        SCH = st.selectbox('SCH', ['10','20', '30', '40', '60', '80', '100'])
-        NPS = st.selectbox('NPS', ['1/2"','1"', '1 1/2"', '2"', '2 1/2"', '3"', '4"'])
-        JPOTONG = st.number_input('Masukan Jumlah yang akan dipotong', min_value=0)
-        
+
+        NPS = st.selectbox('NPS', [
+            '1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
+            '3 1/2','4','5','6','8','10','12','14','16','18','20','22',
+            '24','26','28','30'
+        ])
+
+        SCH = st.selectbox('SCH', ['10','20','30','40','60','80'])
+
+        JPOTONG = st.number_input('Jumlah Pipe Dipotong', min_value=0)
+
         if st.button('HITUNG'):
-            
-            # khusus 4" SCH 40 (sesuai data yang kamu punya)
-            if NPS == '4"' and SCH == '40':
-                volume_pipa = 4069.44          # mm3
-                volume_disc = 10173.6          # mm3 kapasitas 1 disc
-                
-                total_volume = JPOTONG * volume_pipa
+
+            KERF = 3  # tebal cutting disc tetap 3 mm
+
+            data_pipe = {
+                "1/4": {"OD":13.7,"30":10,"40":9.22,"80":7.66},
+                "3/8": {"OD":17.1,"30":13.4,"40":12.48,"80":10.7},
+                "1/2": {"OD":21.3,"10":17.08,"40":15.76,"80":13.84},
+                "3/4": {"OD":26.7,"10":22.48,"40":20.96,"80":18.88},
+                "1": {"OD":33.4,"10":27.86,"40":26.64,"80":24.3},
+                "1 1/4": {"OD":42.2,"10":36.66,"40":35.08,"80":32.5},
+                "1 1/2": {"OD":48.3,"10":42.76,"40":40.94,"80":38.14},
+                "2": {"OD":60.3,"10":54.76,"40":52.48,"80":49.22},
+                "2 1/2": {"OD":73,"10":66.9,"40":62.68,"80":58.98},
+                "3": {"OD":88.9,"10":82.8,"40":77.92,"80":73.66},
+                "4": {"OD":114.3,"10":108.2,"40":102.26,"80":97.18},
+                "5": {"OD":141.3,"40":128.2,"80":122.24},
+                "6": {"OD":168.3,"40":154.08,"80":146.36}
+            }
+
+            pipe = data_pipe.get(NPS)
+
+            if pipe and SCH in pipe:
+
+                OD = pipe["OD"]
+                ID = pipe[SCH]
+
+                volume_cut = (math.pi/4) * (OD**2 - ID**2) * KERF
+                total_volume = volume_cut * JPOTONG
+
+                volume_disc = 12280.77
+
                 kebutuhan_disc = total_volume / volume_disc
-                
-                # dibulatkan ke atas karena tidak mungkin beli setengah disc
                 kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
-                
-                st.write(f"Total Volume Cutting : {total_volume:,.2f} mm3")
-                st.write(f"Kebutuhan Cutting Disc : {kebutuhan_disc:,.2f} pcs")
-                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_disc_bulat} pcs")
-            
+
+                st.write(f"OD : {OD} mm")
+                st.write(f"ID : {ID} mm")
+                st.write(f"Volume potong per pipe : {volume_cut:,.2f} mm3")
+                st.write(f"Total volume potong : {total_volume:,.2f} mm3")
+                st.write(f"Kebutuhan cutting disc : {kebutuhan_disc:,.2f} pcs")
+                st.write(f"Kebutuhan aktual : {kebutuhan_disc_bulat} pcs")
+
             else:
-                st.warning("Data volume belum tersedia untuk ukuran ini")
+                st.warning("Data SCH tidak tersedia untuk ukuran ini")
 
 elif CCALCULATE == 'GRINDING DISC':
     # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC

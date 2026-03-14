@@ -117,8 +117,8 @@ if CCALCULATE == 'CUTTING DISC':
                 # dibulatkan ke atas karena tidak mungkin beli setengah disc
                 kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
                 
-                st.write(f"Total Volume Cutting : {total_volume:.2f} mm3")
-                st.write(f"Kebutuhan Cutting Disc : {kebutuhan_disc:.2f} pcs")
+                st.write(f"Total Volume Cutting : {total_volume:,.2f} mm3")
+                st.write(f"Kebutuhan Cutting Disc : {kebutuhan_disc:,.2f} pcs")
                 st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_disc_bulat} pcs")
             
             else:

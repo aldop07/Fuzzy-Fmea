@@ -293,81 +293,159 @@ elif CCALCULATE == 'FLAP DISC':
                 st.warning("Data ukuran pipe tidak tersedia")
     
 elif CCALCULATE == "FILLER WELD":
+    JPROSESS = st.selectbox('PROCESS', ['GTAW / TIG', 'SMAW / MMA'])
+    if JPROSESS == 'GTAW / TIG'
+       
+        JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe', 'Plate'])
+    
+        if JMATERIAL == 'Pipe':
+            NPS = st.selectbox('NPS', [
+                '1/8','1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
+                '3 1/2','4','5','6','8','10','12','14','16','18','20'
+            ])
+    
+            SCH = st.selectbox('SCH', ['10','20','30','40','60','80'])
+    
+            JJOINT = st.number_input('Jumlah Joint Pengelasan', min_value=0, value=2)
+    
+            if st.button('HITUNG'):
+                # Database dimensi pipa lengkap
+                data_pipe = {
+                    "1/8":  {"OD": 10.3,  "40": 6.8,   "80": 4.8},
+                    "1/4":  {"OD": 13.7,  "40": 9.2,   "80": 7.7},
+                    "3/8":  {"OD": 17.1,  "40": 12.5,  "80": 10.7},
+                    "1/2":  {"OD": 21.3,  "40": 15.8,  "80": 13.9},
+                    "3/4":  {"OD": 26.7,  "40": 21.0,  "80": 18.9},
+                    "1":    {"OD": 33.4,  "40": 26.6,  "80": 24.3},
+                    "1 1/4": {"OD": 42.2,  "40": 35.1,  "80": 32.5},
+                    "1 1/2": {"OD": 48.3,  "40": 40.9,  "80": 38.1},
+                    "2":    {"OD": 60.3,  "40": 52.5,  "80": 49.3},
+                    "2 1/2": {"OD": 73.0,  "40": 62.7,  "80": 59.0},
+                    "3":    {"OD": 88.9,  "40": 77.9,  "80": 73.7},
+                    "3 1/2": {"OD": 101.6, "40": 90.1,  "80": 85.4},
+                    "4":    {"OD": 114.3, "10": 108.2, "30": 104.7, "40": 102.26, "80": 97.18},
+                    "5":    {"OD": 141.3, "40": 128.2, "80": 122.24},
+                    "6":    {"OD": 168.3, "40": 154.08, "80": 146.36},
+                    "8":    {"OD": 219.1, "10": 211.58, "20": 206.4, "30": 205.02, "40": 202.74, "60": 198.48, "80": 193.7},
+                    "10":   {"OD": 273.1, "10": 266.3, "20": 260.3, "30": 257.5, "40": 254.5, "60": 247.7, "80": 242.9},
+                    "12":   {"OD": 323.9, "10": 317.5, "20": 311.1, "30": 307.1, "40": 304.8, "60": 298.5, "80": 288.9},
+                    "20":   {"OD": 508.0, "10": 495.3, "20": 488.94, "30": 482.6, "40": 477.82, "80": 455.62}
+                }
+    
+                pipe = data_pipe.get(NPS)
+    
+                if pipe and SCH in pipe:
+                    # --- LOGIKA PERHITUNGAN BERDASARKAN REFERENSI USER ---
+                    # Referensi: 2 Joint, 4" Sch 40 -> 0.6 kg Filler & 300 psi Argon
+                    
+                    # 1. Hitung Volume Las Referensi (V-Groove 60 deg)
+                    ref_OD = 114.3
+                    ref_ID = 102.26
+                    ref_T = (ref_OD - ref_ID) / 2
+                    ref_area = (ref_T**2) * math.tan(math.radians(30)) 
+                    ref_volume_total_mm3 = (math.pi * ref_OD) * ref_area * 2 # untuk 2 joint referensi
+                    
+                    # 2. Hitung Volume Las Sekarang
+                    current_OD = pipe["OD"]
+                    current_ID = pipe[SCH]
+                    current_T = (current_OD - current_ID) / 2
+                    current_area = (current_T**2) * math.tan(math.radians(30))
+                    volume_mm3 = (math.pi * current_OD) * current_area * JJOINT
+    
+                    # 3. Rasio Perbandingan terhadap Referensi
+                    ratio = volume_mm3 / ref_volume_total_mm3
+    
+                    # 4. Kalkulasi Kebutuhan
+                    filler_needed = 0.6 * ratio
+                    argon_needed = 300 * ratio
+    
+                    # Menghitung berat per batang (Asumsi ER70S-6 dia 2.4mm +/- 0.044kg/btg)
+                    batang_filler = math.ceil(filler_needed / 0.044)
+    
+                    # --- OUTPUT ---
+                    st.write(f"Volume Pengelasan (Total): {volume_mm3:,.2f} mm3")
+                    st.write("Filler Rod (kg)", f"{filler_needed:.3f} kg")
+                    st.write(f"Estimasi: *{batang_filler} batang* (dia 2.4mm)")
+                    st.write("Argon Consumption", f"{argon_needed:.1f} PSI")
+    
+                else:
+                    st.error("Data spesifikasi pipa/SCH tidak ditemukan di database.")
+                    
+    elif JPROSESS == 'SMAW / MMA'
    
-    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe', 'Plate'])
-
-    if JMATERIAL == 'Pipe':
-        NPS = st.selectbox('NPS', [
-            '1/8','1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
-            '3 1/2','4','5','6','8','10','12','14','16','18','20'
-        ])
-
-        SCH = st.selectbox('SCH', ['10','20','30','40','60','80'])
-
-        JJOINT = st.number_input('Jumlah Joint Pengelasan', min_value=0, value=2)
-
-        if st.button('HITUNG'):
-            # Database dimensi pipa lengkap
-            data_pipe = {
-                "1/8":  {"OD": 10.3,  "40": 6.8,   "80": 4.8},
-                "1/4":  {"OD": 13.7,  "40": 9.2,   "80": 7.7},
-                "3/8":  {"OD": 17.1,  "40": 12.5,  "80": 10.7},
-                "1/2":  {"OD": 21.3,  "40": 15.8,  "80": 13.9},
-                "3/4":  {"OD": 26.7,  "40": 21.0,  "80": 18.9},
-                "1":    {"OD": 33.4,  "40": 26.6,  "80": 24.3},
-                "1 1/4": {"OD": 42.2,  "40": 35.1,  "80": 32.5},
-                "1 1/2": {"OD": 48.3,  "40": 40.9,  "80": 38.1},
-                "2":    {"OD": 60.3,  "40": 52.5,  "80": 49.3},
-                "2 1/2": {"OD": 73.0,  "40": 62.7,  "80": 59.0},
-                "3":    {"OD": 88.9,  "40": 77.9,  "80": 73.7},
-                "3 1/2": {"OD": 101.6, "40": 90.1,  "80": 85.4},
-                "4":    {"OD": 114.3, "10": 108.2, "30": 104.7, "40": 102.26, "80": 97.18},
-                "5":    {"OD": 141.3, "40": 128.2, "80": 122.24},
-                "6":    {"OD": 168.3, "40": 154.08, "80": 146.36},
-                "8":    {"OD": 219.1, "10": 211.58, "20": 206.4, "30": 205.02, "40": 202.74, "60": 198.48, "80": 193.7},
-                "10":   {"OD": 273.1, "10": 266.3, "20": 260.3, "30": 257.5, "40": 254.5, "60": 247.7, "80": 242.9},
-                "12":   {"OD": 323.9, "10": 317.5, "20": 311.1, "30": 307.1, "40": 304.8, "60": 298.5, "80": 288.9},
-                "20":   {"OD": 508.0, "10": 495.3, "20": 488.94, "30": 482.6, "40": 477.82, "80": 455.62}
-            }
-
-            pipe = data_pipe.get(NPS)
-
-            if pipe and SCH in pipe:
-                # --- LOGIKA PERHITUNGAN BERDASARKAN REFERENSI USER ---
-                # Referensi: 2 Joint, 4" Sch 40 -> 0.6 kg Filler & 300 psi Argon
-                
-                # 1. Hitung Volume Las Referensi (V-Groove 60 deg)
-                ref_OD = 114.3
-                ref_ID = 102.26
-                ref_T = (ref_OD - ref_ID) / 2
-                ref_area = (ref_T**2) * math.tan(math.radians(30)) 
-                ref_volume_total_mm3 = (math.pi * ref_OD) * ref_area * 2 # untuk 2 joint referensi
-                
-                # 2. Hitung Volume Las Sekarang
-                current_OD = pipe["OD"]
-                current_ID = pipe[SCH]
-                current_T = (current_OD - current_ID) / 2
-                current_area = (current_T**2) * math.tan(math.radians(30))
-                volume_mm3 = (math.pi * current_OD) * current_area * JJOINT
-
-                # 3. Rasio Perbandingan terhadap Referensi
-                ratio = volume_mm3 / ref_volume_total_mm3
-
-                # 4. Kalkulasi Kebutuhan
-                filler_needed = 0.6 * ratio
-                argon_needed = 300 * ratio
-
-                # Menghitung berat per batang (Asumsi ER70S-6 dia 2.4mm +/- 0.044kg/btg)
-                batang_filler = math.ceil(filler_needed / 0.044)
-
-                # --- OUTPUT ---
-                st.write(f"Volume Pengelasan (Total): {volume_mm3:,.2f} mm3")
-                st.write("Filler Rod (kg)", f"{filler_needed:.3f} kg")
-                st.write(f"Estimasi: *{batang_filler} batang* (dia 2.4mm)")
-                st.write("Argon Consumption", f"{argon_needed:.1f} PSI")
-
-            else:
-                st.error("Data spesifikasi pipa/SCH tidak ditemukan di database.")
+        JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe', 'Plate'])
+    
+        if JMATERIAL == 'Pipe':
+            NPS = st.selectbox('NPS', [
+                '1/8','1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
+                '3 1/2','4','5','6','8','10','12','14','16','18','20'
+            ])
+    
+            SCH = st.selectbox('SCH', ['10','20','30','40','60','80'])
+    
+            JJOINT = st.number_input('Jumlah Joint Pengelasan', min_value=0, value=2)
+    
+            if st.button('HITUNG SMAW'):
+                # Database dimensi pipa
+                data_pipe = {
+                    "1/8":  {"OD": 10.3,  "40": 6.8,   "80": 4.8},
+                    "1/4":  {"OD": 13.7,  "40": 9.2,   "80": 7.7},
+                    "3/8":  {"OD": 17.1,  "40": 12.5,  "80": 10.7},
+                    "1/2":  {"OD": 21.3,  "40": 15.8,  "80": 13.9},
+                    "3/4":  {"OD": 26.7,  "40": 21.0,  "80": 18.9},
+                    "1":    {"OD": 33.4,  "40": 26.6,  "80": 24.3},
+                    "1 1/4": {"OD": 42.2,  "40": 35.1,  "80": 32.5},
+                    "1 1/2": {"OD": 48.3,  "40": 40.9,  "80": 38.1},
+                    "2":    {"OD": 60.3,  "40": 52.5,  "80": 49.3},
+                    "2 1/2": {"OD": 73.0,  "40": 62.7,  "80": 59.0},
+                    "3":    {"OD": 88.9,  "40": 77.9,  "80": 73.7},
+                    "3 1/2": {"OD": 101.6, "40": 90.1,  "80": 85.4},
+                    "4":    {"OD": 114.3, "10": 108.2, "30": 104.7, "40": 102.26, "80": 97.18},
+                    "5":    {"OD": 141.3, "40": 128.2, "80": 122.24},
+                    "6":    {"OD": 168.3, "40": 154.08, "80": 146.36},
+                    "8":    {"OD": 219.1, "10": 211.58, "20": 206.4, "30": 205.02, "40": 202.74, "60": 198.48, "80": 193.7},
+                    "10":   {"OD": 273.1, "10": 266.3, "20": 260.3, "30": 257.5, "40": 254.5, "60": 247.7, "80": 242.9},
+                    "12":   {"OD": 323.9, "10": 317.5, "20": 311.1, "30": 307.1, "40": 304.8, "60": 298.5, "80": 288.9},
+                    "20":   {"OD": 508.0, "10": 495.3, "20": 488.94, "30": 482.6, "40": 477.82, "80": 455.62}
+                }
+    
+                pipe = data_pipe.get(NPS)
+    
+                if pipe and SCH in pipe:
+                    # --- LOGIKA PERHITUNGAN BERDASARKAN DATA GAMBAR ---
+                    # Referensi: 2 Joint, 4" Sch 40 -> 0.8 kg Electrode (Filler Metal)
+                    
+                    # 1. Volume Las Referensi (mm3)
+                    ref_OD = 114.3
+                    ref_ID = 102.26
+                    ref_T = (ref_OD - ref_ID) / 2
+                    ref_area = (ref_T**2) * math.tan(math.radians(30)) 
+                    ref_volume_total_mm3 = (math.pi * ref_OD) * ref_area * 2 # untuk 2 joint referensi
+                    
+                    # 2. Hitung Volume Las Sekarang (mm3)
+                    current_OD = pipe["OD"]
+                    current_ID = pipe[SCH]
+                    current_T = (current_OD - current_ID) / 2
+                    current_area = (current_T**2) * math.tan(math.radians(30))
+                    volume_mm3 = (math.pi * current_OD) * current_area * JJOINT
+    
+                    # 3. Rasio Perbandingan terhadap Referensi Gambar
+                    ratio = volume_mm3 / ref_volume_total_mm3
+    
+                    # 4. Kalkulasi Kebutuhan (Berdasarkan 0.8kg per referensi)
+                    filler_needed = 0.8 * ratio
+    
+                    # Menghitung estimasi jumlah batang (Asumsi Electrode E7018 dia 3.2mm +/- 0.035kg/btg)
+                    batang_filler = math.ceil(filler_needed / 0.035)
+    
+                    # --- OUTPUT ---
+                    st.success(f"Analisis Hasil Pengelasan MMA / SMAW: {NPS}\" SCH {SCH}")
+                    st.write(f"Volume Pengelasan (Total): {volume_mm3:,.2f} mm3")
+                    st.write("Filler Metal / Electrode (kg)", f"{filler_needed:.3f} kg")
+                    st.write(f"Estimasi: *{batang_filler} batang* (Electrode 3.2mm)")
+    
+                else:
+                    st.error("Data spesifikasi pipa/SCH tidak ditemukan di database.")
     
 elif CCALCULATE == 'COATING':
 

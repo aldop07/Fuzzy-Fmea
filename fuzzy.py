@@ -154,36 +154,41 @@ if CCALCULATE == 'CUTTING DISC':
 
 elif CCALCULATE == 'GRINDING DISC':
 
-    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate','UNP','WF','H BEAM'])
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate'])
 
     if JMATERIAL == 'Pipe':
 
         NPS = st.selectbox('NPS', [
-            '1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
-            '3 1/2','4','5','6','8','10','12','14','16','18','20','22',
-            '24','26','28','30'
+            '1/8','1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
+            '3 1/2','4','5','6','8','10','12'
         ])
 
         SCH = st.selectbox('SCH', ['10','20','30','40','60','80'])
 
-        JJOINT = st.number_input('Jumlah Joint Beveling', min_value=0)
+        JBEVEL = st.number_input('Jumlah Joint yang di-Bevel', min_value=0)
 
-        if st.button('HITUNG'):
+        if st.button('HITUNG GRINDING'):
 
+            # Data Pipa Lengkap berdasarkan tabel gambar
             data_pipe = {
-                "1/4": {"OD":13.7,"30":10,"40":9.22,"80":7.66},
-                "3/8": {"OD":17.1,"30":13.4,"40":12.48,"80":10.7},
-                "1/2": {"OD":21.3,"10":17.08,"40":15.76,"80":13.84},
-                "3/4": {"OD":26.7,"10":22.48,"40":20.96,"80":18.88},
-                "1": {"OD":33.4,"10":27.86,"40":26.64,"80":24.3},
-                "1 1/4": {"OD":42.2,"10":36.66,"40":35.08,"80":32.5},
-                "1 1/2": {"OD":48.3,"10":42.76,"40":40.94,"80":38.14},
-                "2": {"OD":60.3,"10":54.76,"40":52.48,"80":49.22},
-                "2 1/2": {"OD":73,"10":66.9,"40":62.68,"80":58.98},
-                "3": {"OD":88.9,"10":82.8,"40":77.92,"80":73.66},
-                "4": {"OD":114.3,"10":108.2,"40":102.26,"80":97.18},
-                "5": {"OD":141.3,"40":128.2,"80":122.24},
-                "6": {"OD":168.3,"40":154.08,"80":146.36}
+                "1/8":  {"OD": 10.3,  "40": 6.8,   "80": 4.8},
+                "1/4":  {"OD": 13.7,  "40": 9.2,   "80": 7.7},
+                "3/8":  {"OD": 17.1,  "40": 12.5,  "80": 10.7},
+                "1/2":  {"OD": 21.3,  "40": 15.8,  "80": 13.9},
+                "3/4":  {"OD": 26.7,  "40": 21.0,  "80": 18.9},
+                "1":    {"OD": 33.4,  "40": 26.6,  "80": 24.3},
+                "1 1/4": {"OD": 42.2,  "40": 35.1,  "80": 32.5},
+                "1 1/2": {"OD": 48.3,  "40": 40.9,  "80": 38.1},
+                "2":    {"OD": 60.3,  "40": 52.5,  "80": 49.3},
+                "2 1/2": {"OD": 73.0,  "40": 62.7,  "80": 59.0},
+                "3":    {"OD": 88.9,  "40": 77.9,  "80": 73.7},
+                "3 1/2": {"OD": 101.6, "40": 90.1,  "80": 85.4},
+                "4":    {"OD": 114.3, "10": 108.2, "30": 104.7, "40": 102.26, "80": 97.18},
+                "5":    {"OD": 141.3, "40": 128.2, "80": 122.24},
+                "6":    {"OD": 168.3, "40": 154.08, "80": 146.36},
+                "8":    {"OD": 219.1, "10": 211.58, "20": 206.4, "30": 205.02, "40": 202.74, "60": 198.48, "80": 193.7},
+                "10":   {"OD": 273.1, "10": 266.3, "20": 260.3, "30": 257.5, "40": 254.5, "60": 247.7, "80": 242.9},
+                "12":   {"OD": 323.9, "10": 317.5, "20": 311.1, "30": 307.1, "40": 304.8, "60": 298.5, "80": 288.9}
             }
 
             pipe = data_pipe.get(NPS)
@@ -192,34 +197,31 @@ elif CCALCULATE == 'GRINDING DISC':
 
                 OD = pipe["OD"]
                 ID = pipe[SCH]
+                T = (OD - ID) / 2 # Menghitung tebal pipa
 
-                # thickness
-                t = (OD - ID) / 2
+                # Perhitungan Volume Bevel (Segitiga 30 derajat)
+                # Luas Segitiga = 0.5 * (T * tan(30)) * T
+                luas_segitiga = 0.5 * (T * math.tan(math.radians(30))) * T
+                keliling_pipa = math.pi * OD
+                
+                volume_bevel = luas_segitiga * keliling_pipa
+                total_volume = volume_bevel * JBEVEL
 
-                # bevel height (60°)
-                h = t / math.tan(math.radians(30))
-
-                # radius
-                R = OD / 2
-                r = ID / 2
-
-                # volume bevel
-                volume_bevel = (math.pi * h / 3) * (R**2 + R*r + r**2)
-
-                total_volume = volume_bevel * JJOINT
-
-                # kapasitas 1 grinding disc
+                # Kapasitas 1 grinding disc (Data: 1 disc = 5 joint pipa 4" SCH 40)
+                # Volume per disc = 18626.9 mm3
                 volume_disc = 18626.9
 
                 kebutuhan_disc = total_volume / volume_disc
                 kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
 
-                st.write(f"Total volume bevel : {total_volume:,.2f} mm3")
+                st.success(f"Hasil Analisis Bevel {NPS}\" SCH {SCH}")
+                st.write(f"Tebal Pipa : {T:.2f} mm")
+                st.write(f"Total volume kikis : {total_volume:,.2f} mm3")
                 st.write(f"Kebutuhan grinding disc : {kebutuhan_disc:,.2f} pcs")
-                st.write(f"Kebutuhan aktual : {kebutuhan_disc_bulat} pcs")
+                st.write(f"*Kebutuhan aktual : {kebutuhan_disc_bulat} pcs*")
 
             else:
-                st.warning("Data SCH tidak tersedia untuk ukuran ini")
+                st.warning("Data SCH tidak tersedia untuk ukuran NPS ini di database")
 elif CCALCULATE == 'FLAP DISC':
     # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
     JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])

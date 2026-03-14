@@ -170,7 +170,7 @@ elif CCALCULATE == 'GRINDING DISC':
 
         if st.button('HITUNG'):
 
-            # DATABASE PIPE (dari tabel Anda)
+            # DATABASE PIPE (dari tabel)
             pipe_data = {
             "1/4":{"OD":13.7,"30":10,"40":9.22,"80":7.66},
             "3/8":{"OD":17.1,"30":13.4,"40":12.48,"80":10.7},

@@ -214,9 +214,7 @@ elif CCALCULATE == 'GRINDING DISC':
                 kebutuhan_disc = total_volume / volume_disc
                 kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
 
-                st.success(f"Hasil Analisis Bevel {NPS}\" SCH {SCH}")
-                st.write(f"Tebal Pipa : {T:.2f} mm")
-                st.write(f"Total volume kikis : {total_volume:,.2f} mm3")
+                st.write(f"Total volume bevel : {total_volume:,.2f} mm3")
                 st.write(f"Kebutuhan grinding disc : {kebutuhan_disc:,.2f} pcs")
                 st.write(f"*Kebutuhan aktual : {kebutuhan_disc_bulat} pcs*")
 

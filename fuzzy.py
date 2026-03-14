@@ -157,14 +157,14 @@ if CCALCULATE == 'CUTTING DISC':
 
 elif CCALCULATE == 'GRINDING DISC':
 
-    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate','UNP','WF','H BEAM'])
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe'])
 
     if JMATERIAL == 'Pipe':
 
         NPS = st.selectbox('NPS', [
-            '1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
-            '3 1/2','4','5','6','8','10','12','14','16','18','20','22',
-            '24','26','28','30'
+        '1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
+        '3 1/2','4','5','6','8','10','12','14','16','18','20','22',
+        '24','26','28','30'
         ])
 
         SCH = st.selectbox('SCH', ['10','20','30','40','60','80'])
@@ -173,15 +173,70 @@ elif CCALCULATE == 'GRINDING DISC':
 
         if st.button('HITUNG'):
 
-            kapasitas_disc = 5   # 1 disc = 5 joint bevel 60°
+            # DATABASE PIPE (dari tabel Anda)
+            pipe_data = {
+            "1/4":{"OD":13.7,"30":10,"40":9.22,"80":7.66},
+            "3/8":{"OD":17.1,"30":13.4,"40":12.48,"80":10.7},
+            "1/2":{"OD":21.3,"10":17.08,"40":15.76,"80":13.84},
+            "3/4":{"OD":26.7,"10":22.48,"40":20.96,"80":18.88},
+            "1":{"OD":33.4,"10":27.86,"40":26.64,"80":24.3},
+            "1 1/4":{"OD":42.2,"10":36.66,"40":35.08,"80":32.5},
+            "1 1/2":{"OD":48.3,"10":42.76,"40":40.94,"80":38.14},
+            "2":{"OD":60.3,"10":54.76,"40":52.48,"80":49.22},
+            "2 1/2":{"OD":73,"10":66.9,"40":62.68,"80":58.98},
+            "3":{"OD":88.9,"10":82.8,"40":77.92,"80":73.66},
+            "3 1/2":{"OD":101.6,"10":95.5,"40":90.12,"80":85.44},
+            "4":{"OD":114.3,"10":108.2,"40":102.26,"80":97.18},
+            "5":{"OD":141.3,"10":134.5,"40":128.2,"80":122.24},
+            "6":{"OD":168.3,"10":161.5,"40":154.08,"80":146.36},
+            "8":{"OD":219.1,"10":211.58,"20":206.4,"30":205.02,"40":202.74,"60":198.48,"80":193.7},
+            "10":{"OD":273,"10":264.62,"20":260.3,"30":257.4,"40":254.46,"60":247.6,"80":242.82},
+            "12":{"OD":323.8,"10":314.66,"20":311.1,"30":307.04,"40":303.18,"60":295.26,"80":288.84},
+            "14":{"OD":355.5,"10":342.9,"20":339.76,"30":336.54,"40":333.34,"60":325.42,"80":317.5},
+            "16":{"OD":406.4,"10":393.7,"20":390.56,"30":387.34,"40":381,"60":373.08,"80":363.52}
+            }
 
-            kebutuhan_disc = JJOINT / kapasitas_disc
-            kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
+            pipe = pipe_data.get(NPS)
 
-            st.write(f"Jumlah Joint : {JJOINT}")
-            st.write(f"Kapasitas Grinding Disc : 5 joint / pcs")
-            st.write(f"Kebutuhan Grinding Disc : {kebutuhan_disc:,.2f} pcs")
-            st.write(f"Kebutuhan Aktual : {kebutuhan_disc_bulat} pcs")
+            if pipe and SCH in pipe:
+
+                OD = pipe["OD"]
+                ID = pipe[SCH]
+
+                # thickness
+                t = (OD - ID)/2
+
+                # bevel angle 60°
+                h = t / math.tan(math.radians(30))
+
+                R = OD/2
+                r = ID/2
+
+                # volume bevel
+                volume_bevel = (math.pi*h/3)*(R**2 + R*r + r**2)
+
+                total_volume = volume_bevel * JJOINT
+
+                disc_capacity = 5
+                kebutuhan_disc = JJOINT / disc_capacity
+                kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
+
+                volume_disc = volume_bevel * disc_capacity
+
+                st.write(f"OD Pipe : {OD} mm")
+                st.write(f"ID Pipe : {ID} mm")
+                st.write(f"Thickness : {t:.2f} mm")
+
+                st.write(f"Volume Bevel per Joint : {volume_bevel:,.2f} mm³")
+                st.write(f"Total Volume Bevel : {total_volume:,.2f} mm³")
+
+                st.write(f"Kapasitas 1 Grinding Disc : {volume_disc:,.2f} mm³")
+
+                st.write(f"Kebutuhan Grinding Disc : {kebutuhan_disc:,.2f} pcs")
+                st.write(f"Kebutuhan Aktual : {kebutuhan_disc_bulat} pcs")
+
+            else:
+                st.warning("Data SCH tidak tersedia untuk ukuran ini")
 
 elif CCALCULATE == 'FLAP DISC':
     # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC

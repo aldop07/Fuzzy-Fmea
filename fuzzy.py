@@ -145,9 +145,6 @@ if CCALCULATE == 'CUTTING DISC':
                 kebutuhan_disc = total_volume / volume_disc
                 kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
 
-                st.write(f"OD : {OD} mm")
-                st.write(f"ID : {ID} mm")
-                st.write(f"Volume potong per pipe : {volume_cut:,.2f} mm3")
                 st.write(f"Total volume potong : {total_volume:,.2f} mm3")
                 st.write(f"Kebutuhan cutting disc : {kebutuhan_disc:,.2f} pcs")
                 st.write(f"Kebutuhan aktual : {kebutuhan_disc_bulat} pcs")
@@ -223,14 +220,9 @@ elif CCALCULATE == 'GRINDING DISC':
 
                 volume_disc = volume_bevel * disc_capacity
 
-                st.write(f"OD Pipe : {OD} mm")
-                st.write(f"ID Pipe : {ID} mm")
-                st.write(f"Thickness : {t:.2f} mm")
-
                 st.write(f"Volume Bevel per Joint : {volume_bevel:,.2f} mm³")
                 st.write(f"Total Volume Bevel : {total_volume:,.2f} mm³")
 
-                st.write(f"Kapasitas 1 Grinding Disc : {volume_disc:,.2f} mm³")
 
                 st.write(f"Kebutuhan Grinding Disc : {kebutuhan_disc:,.2f} pcs")
                 st.write(f"Kebutuhan Aktual : {kebutuhan_disc_bulat} pcs")

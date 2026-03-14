@@ -152,8 +152,7 @@ elif CCALCULATE == 'COATING':
         
         if st.button('HITUNG'):
             
-            # khusus 4" SCH 40
-            if NPS == '1"' and SCH == '40' and JCOATNG == 'Cat jotun futura classic clay brown ral 8003':
+            if NPS == '1"' and SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
                 keliling_pipe = 108.876
                 coating = 2613024          # mm2 kapasitas 1kg
                 

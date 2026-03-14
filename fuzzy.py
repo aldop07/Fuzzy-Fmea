@@ -159,11 +159,10 @@ elif CCALCULATE == 'COATING':
                 total_luas = JPANJANG * keliling_pipe
                 kebutuhan_cat = total_luas / coating
                 
-                # dibulatkan ke atas karena tidak mungkin beli setengah disc
                 kebutuhan_coating = math.ceil(kebutuhan_cat)
                 
-                st.write(f"Total Luas Coating : {total_luas:.2f} mm2")
-                st.write(f"Kebutuhan Coating : {kebutuhan_cat:.2f} kg")
+                st.write(f"Total Luas Coating : {total_luas:,.2f} mm2")
+                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
                 st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
             
             else:

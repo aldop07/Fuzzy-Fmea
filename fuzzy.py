@@ -164,11 +164,11 @@ elif CCALCULATE == 'COATING':
                kebutuhan_coating = math.ceil(kebutuhan_cat)
                 
                 st.write(f"Total Volume Cutting : total_luas:.2f} mm2")
-                st.write(f"Kebutuhan Coating : {kebutuhan_coating:.2f} kg")
+                st.write(f"Kebutuhan Coating : {kebutuhan_cat:.2f} kg")
                 st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
             
             else:
-                st.warning("Data volume belum tersedia untuk ukuran ini")
+                st.warning("Data luas belum tersedia untuk ukuran ini")
 
 
 

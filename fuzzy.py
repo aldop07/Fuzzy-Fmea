@@ -141,8 +141,34 @@ elif CCALCULATE == 'ARGON':
     JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
     
 elif CCALCULATE == 'COATING':
-    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
+    # HITUNG VALUE KEBUTUHAN COATING
     JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
+    
+    if JMATERIAL == 'Pipe':
+        
+        SCH = st.selectbox('SCH', ['10','20', '30', '40', '60', '80', '100'])
+        NPS = st.selectbox('NPS', ['1/2"','1"', '1 1/2"', '2"', '2 1/2"', '3"', '4"'])
+        JPANJANG = st.number_input('Masukan Jumlah panjang yang akan di coating', min_value=0)
+        
+        if st.button('HITUNG'):
+            
+            # khusus 4" SCH 40
+            if NPS == '1"' and SCH == '40':
+                diameter_pipe = 33.4
+                coating = 2523880          # mm2 kapasitas 1kg
+                
+                total_luas = JPANJANG *diameter_pipe
+                kebutuhan_cat = total_luas / coating
+                
+                # dibulatkan ke atas karena tidak mungkin beli setengah disc
+               kebutuhan_coating = math.ceil(kebutuhan_cat)
+                
+                st.write(f"Total Volume Cutting : total_luas:.2f} mm2")
+                st.write(f"Kebutuhan Coating : {kebutuhan_coating:.2f} kg")
+                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
+            
+            else:
+                st.warning("Data volume belum tersedia untuk ukuran ini")
 
 
 

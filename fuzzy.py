@@ -91,39 +91,54 @@ import numpy as np
 import streamlit as st
 import pandas as pd
 import math
-
 # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
-JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
+CCALCULATE = st.selectbox('CONSUMABLE CALCULATE', ['CUTTING DISC','GRINDING DISC', 'FLAP DISC', 'ARGON', 'PAINTING'])
 
-if JMATERIAL == 'Pipe':
+if CCALCULATE == 'CUTTING DISC':
+    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
     
-    SCH = st.selectbox('SCH', ['10','20', '30', '40', '60', '80', '100'])
-    NPS = st.selectbox('NPS', ['1/2"','1"', '1 1/2"', '2"', '2 1/2"', '3"', '4"'])
-    JPOTONG = st.number_input('Masukan Jumlah yang akan dipotong', min_value=0)
+    if JMATERIAL == 'Pipe':
+        
+        SCH = st.selectbox('SCH', ['10','20', '30', '40', '60', '80', '100'])
+        NPS = st.selectbox('NPS', ['1/2"','1"', '1 1/2"', '2"', '2 1/2"', '3"', '4"'])
+        JPOTONG = st.number_input('Masukan Jumlah yang akan dipotong', min_value=0)
+        
+        if st.button('HITUNG'):
+            
+            # khusus 4" SCH 40 (sesuai data yang kamu punya)
+            if NPS == '4"' and SCH == '40':
+                volume_pipa = 4069.44          # mm3
+                volume_disc = 10173.6          # mm3 kapasitas 1 disc
+                
+                total_volume = JPOTONG * volume_pipa
+                kebutuhan_disc = total_volume / volume_disc
+                
+                # dibulatkan ke atas karena tidak mungkin beli setengah disc
+                kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
+                
+                st.write(f"Total Volume Cutting : {total_volume:.2f} mm3")
+                st.write(f"Kebutuhan Cutting Disc : {kebutuhan_disc:.2f} pcs")
+                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_disc_bulat} pcs")
+            
+            else:
+                st.warning("Data volume belum tersedia untuk ukuran ini")
+
+elif CCALCULATE == 'GRINDING DISC':
+    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
+
+elif CCALCULATE == 'FLAP DISC':
+    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
     
-    if st.button('HITUNG'):
-        
-        # khusus 4" SCH 40 (sesuai data yang kamu punya)
-        if NPS == '4"' and SCH == '40':
-            volume_pipa = 4069.44          # mm3
-            volume_disc = 10173.6          # mm3 kapasitas 1 disc
-            
-            total_volume = JPOTONG * volume_pipa
-            kebutuhan_disc = total_volume / volume_disc
-            
-            # dibulatkan ke atas karena tidak mungkin beli setengah disc
-            kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
-            
-            st.write(f"Total Volume Cutting : {total_volume:.2f} mm3")
-            st.write(f"Kebutuhan Cutting Disc : {kebutuhan_disc:.2f} pcs")
-            st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_disc_bulat} pcs")
-        
-        else:
-            st.warning("Data volume belum tersedia untuk ukuran ini")
-
-
-
-
+elif CCALCULATE == 'ARGON':
+    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
+    
+elif CCALCULATE == 'COATING':
+    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
 
 
 

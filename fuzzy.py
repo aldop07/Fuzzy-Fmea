@@ -272,7 +272,7 @@ elif CCALCULATE == 'COATING':
             
             coating_data = {
                 'Cat jotun futura classic clay brown ral 8003'  : 1633140,
-                'Cat jotun easy prime grey ral 38'  : 1633140,
+                'Cat jotun easy prime grey ral 38'  : 3408156,
                 'Cat Jotun Solvalit Black'    : 3190240
             }
             coating = coating_data.get(JCOATING,0)

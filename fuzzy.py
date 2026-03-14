@@ -235,7 +235,7 @@ elif CCALCULATE == 'FLAP DISC':
 
         JBUFFING = st.number_input('Jumlah Joint yang di-Buffing', min_value=0)
 
-        if st.button('HITUNG BUFFING'):
+        if st.button('HITUNG'):
 
             # Data Pipa Lengkap berdasarkan tabel gambar 1 & 3
             data_pipe = {

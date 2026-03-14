@@ -176,9 +176,9 @@ elif CCALCULATE == 'COATING':
                 kebutuhan_cat = total_luas / coating
                 kebutuhan_coating = math.ceil(kebutuhan_cat)
                 
-                st.write(f"Total Luas Coating : {total_luas:,.2f} mm3")
-                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} pcs")
-                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} pcs")
+                st.write(f"Total Luas Coating : {total_luas:,.2f} mm2")
+                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} kg")
+                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} kg")
 
             else:
                 st.warning("Data ukuran pipe tidak tersedia")

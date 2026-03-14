@@ -157,11 +157,11 @@ elif CCALCULATE == 'COATING':
                 diameter_pipe = 33.4
                 coating = 2523880          # mm2 kapasitas 1kg
                 
-                total_luas = JPANJANG *diameter_pipe
+                total_luas = JPANJANG * diameter_pipe
                 kebutuhan_cat = total_luas / coating
                 
                 # dibulatkan ke atas karena tidak mungkin beli setengah disc
-               kebutuhan_coating = math.ceil(kebutuhan_cat)
+                kebutuhan_coating = math.ceil(kebutuhan_cat)
                 
                 st.write(f"Total Volume Cutting : total_luas:.2f} mm2")
                 st.write(f"Kebutuhan Coating : {kebutuhan_cat:.2f} kg")

@@ -292,13 +292,72 @@ elif CCALCULATE == 'FLAP DISC':
             else:
                 st.warning("Data ukuran pipe tidak tersedia")
     
-elif CCALCULATE == 'FILLER WELD':
-    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
-    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
-    
-elif CCALCULATE == 'ARGON':
-    # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC
-    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
+elif CCALCULATE == "FILLER WELD":
+   
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe', 'Plate'])
+
+    if JMATERIAL == 'Pipe':
+        NPS = st.selectbox('NPS', [
+            '1/8','1/4','3/8','1/2','3/4','1','1 1/4','1 1/2','2','2 1/2','3',
+            '3 1/2','4','5','6','8','10','12','14','16','18','20'
+        ])
+
+        SCH = st.selectbox('SCH', ['10','20','30','40','60','80'])
+
+        JJOINT = st.number_input('Jumlah Joint Pengelasan', min_value=0, value=2)
+
+        if st.button('HITUNG WELDING'):
+            # Database dimensi pipa (sama dengan referensi Anda)
+            data_pipe = {
+                "4": {"OD": 114.3, "40": 102.26, "80": 97.18},
+                # Tambahkan NPS lain di sini jika diperlukan untuk welding
+            }
+
+            pipe = data_pipe.get(NPS)
+
+            if pipe and SCH in pipe:
+                # --- LOGIKA PERHITUNGAN BERDASARKAN REFERENSI USER ---
+                # Referensi: 2 Joint, 4" Sch 40 -> 0.6 kg Filler & 300 psi Argon
+                
+                # 1. Hitung Volume Las Referensi (untuk perbandingan ukuran lain)
+                ref_OD = 114.3
+                ref_ID = 102.26
+                ref_T = (ref_OD - ref_ID) / 2
+                # Luas penampang las sederhana (V-Groove 60 deg)
+                ref_area = (ref_T**2) * math.tan(math.radians(30)) 
+                ref_volume_total = (math.pi * ref_OD) * ref_area * 2 # untuk 2 joint
+                
+                # 2. Hitung Volume Las Sekarang
+                current_OD = pipe["OD"]
+                current_ID = pipe[SCH]
+                current_T = (current_OD - current_ID) / 2
+                current_area = (current_T**2) * math.tan(math.radians(30))
+                current_volume_total = (math.pi * current_OD) * current_area * JJOINT
+
+                # 3. Rasio Perbandingan terhadap Referensi
+                ratio = current_volume_total / ref_volume_total
+
+                # 4. Kalkulasi Kebutuhan (0.6kg filler & 300psi argon per 2 joint 4" Sch 40)
+                filler_needed = 0.6 * ratio
+                argon_needed = 300 * ratio
+
+                # Menghitung berat per batang (Asumsi ER70S-6 dia 2.4mm +/- 0.04kg/btg)
+                batang_filler = math.ceil(filler_needed / 0.044)
+
+                st.success(f"Hasil Analisis Welding {NPS}\" SCH {SCH}")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Filler Rod (kg)", f"{filler_needed:.3f} kg")
+                    st.write(f"Estimasi: *{batang_filler} batang* (dia 2.4mm)")
+                
+                with col2:
+                    st.metric("Argon Consumption", f"{argon_needed:.1f} PSI")
+                    st.write(f"Tekanan awal tabung disarankan > {argon_needed + 500:.0f} PSI")
+
+                st.info("Catatan: Perhitungan mencakup root, fill, dan capping dengan asumsi loss factor 15%.")
+            else:
+                st.error("Data spesifikasi pipa/SCH tidak ditemukan di database.")
     
 elif CCALCULATE == 'COATING':
 

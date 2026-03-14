@@ -170,7 +170,7 @@ elif CCALCULATE == 'COATING':
 
             if keliling_pipe:
 
-                coating = 2613024
+                coating = 1633140
 
                 total_luas = JPANJANG * keliling_pipe
                 kebutuhan_cat = total_luas / coating

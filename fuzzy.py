@@ -294,8 +294,7 @@ elif CCALCULATE == 'FLAP DISC':
     
 elif CCALCULATE == "FILLER WELD":
     JPROSESS = st.selectbox('PROCESS', ['GTAW / TIG', 'SMAW / MMA'])
-    if JPROSESS == 'GTAW / TIG'
-       
+    if JPROSESS == 'GTAW / TIG':
         JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe', 'Plate'])
     
         if JMATERIAL == 'Pipe':
@@ -371,7 +370,7 @@ elif CCALCULATE == "FILLER WELD":
                 else:
                     st.error("Data spesifikasi pipa/SCH tidak ditemukan di database.")
                     
-    elif JPROSESS == 'SMAW / MMA'
+    elif JPROSESS == 'SMAW / MMA':
    
         JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe', 'Plate'])
     

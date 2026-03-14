@@ -141,15 +141,20 @@ elif CCALCULATE == 'ARGON':
     JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
     
 elif CCALCULATE == 'COATING':
-    # HITUNG VALUE KEBUTUHAN COATING
-    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate', 'UNP', 'WF', 'H BEAM'])
-    
+
+    JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate','UNP','WF','H BEAM'])
+
     if JMATERIAL == 'Pipe':
-        JCOATING = st.selectbox('JENIS CAT', ['Cat jotun futura classic clay brown ral 8003','Cat Jotun Solvalit Black'])
-        SCH = st.selectbox('SCH', ['10','20', '30', '40', '60', '80', '100'])
-        NPS = st.selectbox('NPS', ['1/2"','1"', '1 1/2"', '2"', '2 1/2"', '3"', '4"'])
+
+        JCOATING = st.selectbox(
+            'JENIS CAT',
+            ['Cat jotun futura classic clay brown ral 8003','Cat Jotun Solvalit Black']
+        )
+
+        SCH = st.selectbox('SCH', ['10','20','30','40','60','80','100'])
+        NPS = st.selectbox('NPS', ['1/2"','1"','1 1/2"','2"','2 1/2"','3"','4"'])
         JPANJANG = st.number_input('Masukan Jumlah panjang yang akan di coating', min_value=0)
-            
+
         if st.button('HITUNG'):
 
             # database keliling pipe

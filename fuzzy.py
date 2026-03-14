@@ -154,7 +154,7 @@ elif CCALCULATE == 'COATING':
             
             # khusus 4" SCH 40
             if NPS == '1"' and SCH == '40':
-                diameter_pipe = 33.4
+                diameter_pipe = 52.438
                 coating = 2523880          # mm2 kapasitas 1kg
                 
                 total_luas = JPANJANG * diameter_pipe

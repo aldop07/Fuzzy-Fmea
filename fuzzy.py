@@ -168,13 +168,13 @@ elif CCALCULATE == 'COATING':
 
             keliling_pipe = keliling_data.get(NPS)
 
-            coating_data = {
-                'Cat jotun futura classic clay brown ral 8003"'  : 1633140,
-                'Cat Jotun Solvalit Black'    : 3190240,
-            }
+
 
             if keliling_pipe:
-
+                coating_data = {
+                    'Cat jotun futura classic clay brown ral 8003"'  : 1633140,
+                    'Cat Jotun Solvalit Black'    : 3190240,
+                }
                 coating = coating_data.get(JCOATING,0)
                 total_luas = JPANJANG * keliling_pipe
                 kebutuhan_cat = total_luas / coating

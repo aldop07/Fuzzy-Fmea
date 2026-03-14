@@ -344,18 +344,10 @@ elif CCALCULATE == "FILLER WELD":
                 # Menghitung berat per batang (Asumsi ER70S-6 dia 2.4mm +/- 0.04kg/btg)
                 batang_filler = math.ceil(filler_needed / 0.044)
 
-                st.success(f"Hasil Analisis Welding {NPS}\" SCH {SCH}")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Filler Rod (kg)", f"{filler_needed:.3f} kg")
-                    st.write(f"Estimasi: *{batang_filler} batang* (dia 2.4mm)")
-                
-                with col2:
-                    st.metric("Argon Consumption", f"{argon_needed:.1f} PSI")
-                    st.write(f"Tekanan awal tabung disarankan > {argon_needed + 500:.0f} PSI")
+                st.write("Filler Rod (kg)", f"{filler_needed:.3f} kg")
+                st.write(f"Estimasi: *{batang_filler} batang* (dia 2.4mm)")
+                st.write("Argon Consumption", f"{argon_needed:.1f} PSI")
 
-                st.info("Catatan: Perhitungan mencakup root, fill, dan capping dengan asumsi loss factor 15%.")
             else:
                 st.error("Data spesifikasi pipa/SCH tidak ditemukan di database.")
     

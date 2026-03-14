@@ -148,7 +148,7 @@ elif CCALCULATE == 'COATING':
 
         JCOATING = st.selectbox(
             'JENIS CAT',
-            ['Cat jotun futura classic clay brown ral 8003','Cat Jotun Solvalit Black']
+            ['Cat jotun futura classic clay brown ral 8003','Cat Jotun Solvalit Black','Cat jotun easy prime grey ral 38']
         )
 
         NPS = st.selectbox('NPS', ['1/2"','1"','1 1/2"','2"','2 1/2"','3"','4"'])
@@ -170,6 +170,7 @@ elif CCALCULATE == 'COATING':
             
             coating_data = {
                 'Cat jotun futura classic clay brown ral 8003'  : 1633140,
+                'Cat jotun easy prime grey ral 38'  : 1633140,
                 'Cat Jotun Solvalit Black'    : 3190240
             }
             coating = coating_data.get(JCOATING,0)

@@ -151,13 +151,11 @@ elif CCALCULATE == 'COATING':
             ['Cat jotun futura classic clay brown ral 8003','Cat Jotun Solvalit Black']
         )
 
-        SCH = st.selectbox('SCH', ['10','20','30','40','60','80','100'])
         NPS = st.selectbox('NPS', ['1/2"','1"','1 1/2"','2"','2 1/2"','3"','4"'])
-        JPANJANG = st.number_input('Masukan Jumlah panjang yang akan di coating', min_value=0)
+        JPANJANG = st.number_input('Masukan panjang pipe yang akan di coating (mm)', min_value=0)
 
         if st.button('HITUNG'):
 
-            # database keliling pipe
             keliling_data = {
                 '1/2"'  : 66.882,
                 '1"'    : 108.876,
@@ -168,26 +166,21 @@ elif CCALCULATE == 'COATING':
                 '4"'    : 358.902
             }
 
-            if SCH == '40' and JCOATING == 'Cat jotun futura classic clay brown ral 8003':
+            keliling_pipe = keliling_data.get(NPS)
 
-                keliling_pipe = keliling_data.get(NPS)
+            if keliling_pipe:
 
-                if keliling_pipe:
+                coating = 2613024
 
-                    coating = 2613024
-
-                    total_luas = JPANJANG * keliling_pipe
-                    kebutuhan_cat = total_luas / coating
-                    kebutuhan_coating = math.ceil(kebutuhan_cat)
-
-                    st.write(f"Total Luas Coating : {format_indo(total_luas)} mm2")
-                    st.write(f"Kebutuhan Coating : {format_indo(kebutuhan_cat)} kg")
-                    st.write(f"Kebutuhan Aktual : {format_indo_int(kebutuhan_coating)} kg")
-
-                else:
-                    st.warning("Data ukuran pipe tidak ditemukan")
+                total_luas = JPANJANG * keliling_pipe
+                kebutuhan_cat = total_luas / coating
+                kebutuhan_coating = math.ceil(kebutuhan_cat)
+                
+                st.write(f"Total Luas Coating : {total_luas:,.2f} mm3")
+                st.write(f"Kebutuhan Coating : {kebutuhan_cat:,.2f} pcs")
+                st.write(f"Kebutuhan Aktual (dibulatkan) : {kebutuhan_coating} pcs")
 
             else:
-                st.warning("Data coating belum tersedia untuk kombinasi ini")
+                st.warning("Data ukuran pipe tidak tersedia")
 
 

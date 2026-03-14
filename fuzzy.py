@@ -150,7 +150,7 @@ if CCALCULATE == 'CUTTING DISC':
                 st.write(f"Kebutuhan aktual : {kebutuhan_disc_bulat} pcs")
 
             else:
-                st.warning("Data SCH tidak tersedia untuk ukuran ini")
+                st.warning("Data ukuran pipe tidak tersedia")
 
 elif CCALCULATE == 'GRINDING DISC':
 
@@ -219,7 +219,7 @@ elif CCALCULATE == 'GRINDING DISC':
                 st.write(f"*Kebutuhan aktual : {kebutuhan_disc_bulat} pcs*")
 
             else:
-                st.warning("Data SCH tidak tersedia untuk ukuran NPS ini di database")
+                st.warning("Data ukuran pipe tidak tersedia")
 elif CCALCULATE == 'FLAP DISC':
 
     JMATERIAL = st.selectbox('JENIS MATERIAL', ['Pipe','Plate'])
@@ -284,14 +284,13 @@ elif CCALCULATE == 'FLAP DISC':
                 kebutuhan_disc = total_area / area_disc_buffing
                 kebutuhan_disc_bulat = math.ceil(kebutuhan_disc)
 
-                st.success(f"Hasil Analisis Buffing {NPS}\" SCH {SCH}")
                 st.write(f"Area buffing per joint : {area_buffing_per_joint:,.2f} mm2")
                 st.write(f"Total area buffing : {total_area:,.2f} mm2")
                 st.write(f"Kebutuhan flap disc : {kebutuhan_disc:,.2f} pcs")
                 st.write(f"*Kebutuhan aktual : {kebutuhan_disc_bulat} pcs*")
 
             else:
-                st.warning("Data SCH tidak tersedia untuk ukuran NPS ini di database")
+                st.warning("Data ukuran pipe tidak tersedia")
     
 elif CCALCULATE == 'FILLER WELD':
     # HITUNG VOLUME YANG HARUS DIPOTONG DAN KEBUTUHAN CUTTING DISC

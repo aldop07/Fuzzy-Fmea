@@ -64,7 +64,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
                          drawing_no, standard, description, penetrant_method, removal_method, 
                          brand_name, penetrant_type, developer_type, cleaner_type, 
-                         surface_prep, time_exam, scope_exam, data_df, logo_width_inch, logo_height_inch,
+                         surface_prep, time_exam, scope_exam, data_df, logo_width_inch,
                          dict_joint_photos, photo_width_inch):
     
     doc = Document()
@@ -72,11 +72,11 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     # Atur Margin Halaman Cetak Standar Internasional A4
     sections = doc.sections
     for section in sections:
-        section.top_margin = Inches(1.80)      # Margin atas disetel proporsional
+        section.top_margin = Inches(2.1)       
         section.bottom_margin = Inches(1.0)    
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.75)
-        section.header_distance = Inches(0.15) 
+        section.header_distance = Inches(0.4)  
         section.page_width = Inches(8.27)
         section.page_height = Inches(11.69)
 
@@ -103,12 +103,13 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     cell_right_top = kop_table.cell(0, 2).merge(kop_table.cell(0, 3))     
     cell_right_bottom = kop_table.cell(1, 2).merge(kop_table.cell(1, 3))  
 
+    # PERBAIKAN: Menghapus parameter 'height' agar otomatis lock aspect ratio sesuai gambar asli
     # Logo Kiri
     cell_left.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_left = cell_left.paragraphs[0]
     p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_left_bytes is not None:
-        p_left.add_run().add_picture(logo_left_bytes, width=Inches(logo_width_inch), height=Inches(logo_height_inch))
+        p_left.add_run().add_picture(logo_left_bytes, width=Inches(logo_width_inch))
     else:
         p_left.add_run("[ LOGO KIRI ]").font.color.rgb = RGBColor(160, 160, 160)
 
@@ -126,7 +127,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     p_rt = cell_right_top.paragraphs[0]
     p_rt.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_right_top_bytes is not None:
-        p_rt.add_run().add_picture(logo_right_top_bytes, width=Inches(logo_width_inch), height=Inches(logo_height_inch))
+        p_rt.add_run().add_picture(logo_right_top_bytes, width=Inches(logo_width_inch))
     else:
         p_rt.add_run("[ LOGO KANAN ATAS ]").font.color.rgb = RGBColor(160, 160, 160)
 
@@ -135,7 +136,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     p_rb = cell_right_bottom.paragraphs[0]
     p_rb.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_right_bottom_bytes is not None:
-        p_rb.add_run().add_picture(logo_right_bottom_bytes, width=Inches(logo_width_inch), height=Inches(logo_height_inch))
+        p_rb.add_run().add_picture(logo_right_bottom_bytes, width=Inches(logo_width_inch))
     else:
         p_rb.add_run("[ LOGO KANAN BAWAH ]").font.color.rgb = RGBColor(160, 160, 160)
 
@@ -162,9 +163,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     meta_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
     meta_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # ===================================================================================
-    # FIX: BUMPER SPACER HEADER (MENCEGAH TABEL HALAMAN 2 MENEMPEL KE KOP SURAT)
-    # ===================================================================================
+    # Bumper Spacer Header
     header_bumper = header.add_paragraph()
     header_bumper.paragraph_format.space_before = Pt(0)
     header_bumper.paragraph_format.space_after = Pt(14) 
@@ -275,7 +274,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
-    # Seksi Verifikasi Tanda Tangan
+    # Seksi Verifikasi Tanda Tangan (1 Baris - Anti Terbelah Halaman)
     table_sig = doc.add_table(rows=1, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
@@ -421,9 +420,12 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
     st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto seragam per-joint.")
 
+    # SIDEBAR KONTROL SLIDER KOMPONEN
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
-    logo_w_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
-    logo_h_setting = st.sidebar.slider("Tinggi Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
+    # PERBAIKAN: Hanya menggunakan slider lebar untuk logo kop. Tinggi akan mengunci secara otomatis (Proporsional)
+    logo_w_setting = st.sidebar.slider("Lebar Logo Kop Surat (Inchi)", min_value=0.8, max_value=2.2, value=1.4, step=0.05)
+    st.sidebar.info("💡 Tinggi logo otomatis disesuaikan secara proporsional agar tidak gepeng.")
+    
     photo_w_setting = st.sidebar.slider("Lebar Cetak Foto Lampiran / Attachment (Inchi)", min_value=1.5, max_value=3.2, value=2.4, step=0.05)
 
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
@@ -524,12 +526,12 @@ if main_menu == "LIQUID PENETRANT REPORT":
         }
     )
 
+    # Interface upload foto paralel per-joint
     st.markdown("---")
     st.subheader("📸 Upload Dokumentasi Foto Lapangan Per-Joint")
     st.write("Silakan buka expander di bawah ini untuk memasukkan foto spesifik pada masing-masing nomor joint:")
     
     master_joint_photos = {}
-    
     for idx, row in edited_weld_df.iterrows():
         w_id = str(row["WELD NO"])
         p_name = str(row["PART NAME"])
@@ -557,6 +559,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
         generate_layout = st.button("🚀 Generate Screen Layout")
         
     with col_btn2:
+        # PERBAIKAN: Parameter logo_height_inch dihapus agar Word membaca aspect ratio asli secara dynamic
         docx_buffer = generate_docx_report(
             logo_left_bytes=logo_l_io, logo_right_top_bytes=logo_rt_io, logo_right_bottom_bytes=logo_rb_io,
             client=client, project=project, equipment=equipment, auto_form_no=auto_form_no, 
@@ -566,7 +569,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
             brand_name=brand_name, penetrant_type=penetrant_type, developer_type=developer_type,
             cleaner_type=cleaner_type, surface_prep=surface_prep, time_exam=time_exam,
             scope_exam=scope_exam, data_df=edited_weld_df, 
-            logo_width_inch=logo_w_setting, logo_height_inch=logo_h_setting,
+            logo_width_inch=logo_w_setting, logo_height_inch=None, # Mengunci aspect ratio otomatis
             dict_joint_photos=master_joint_photos,
             photo_width_inch=photo_w_setting
         )

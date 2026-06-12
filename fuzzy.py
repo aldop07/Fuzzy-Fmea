@@ -5,8 +5,9 @@ import math
 from datetime import datetime
 import io
 from docx import Document
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import OxmlElement, parse_xml
 from docx.oxml.ns import qn, nsdecls
 
@@ -14,129 +15,285 @@ from docx.oxml.ns import qn, nsdecls
 st.set_page_config(page_title="Engineering Tools & LPI Report", layout="wide")
 
 # =======================================================================================
-# FUNGSI UNTUK GENERATE FILE WORD (.DOCX)
+# FUNGSI PEMBANTU UNTUK FORMATTING DATA CELL WORD
 # =======================================================================================
-def generate_docx_report(logo_bytes, client, project, equipment, auto_form_no, date_str, 
+def set_cell_margins(cell, top=100, bottom=100, start=100, end=100):
+    """Mengatur padding didalam cell tabel (dalam dxa)"""
+    tcPr = cell._tc.get_or_add_tcPr()
+    tcMar = OxmlElement('w:tcMar')
+    for m, val in [('w:top', top), ('w:bottom', bottom), ('w:left', start), ('w:right', end)]:
+        node = OxmlElement(m)
+        node.set(qn('w:w'), str(val))
+        node.set(qn('w:type'), 'dxa')
+        tcMar.append(node)
+    tcPr.append(tcMar)
+
+def set_cell_background(cell, fill_hex):
+    """Mengatur warna latar belakang cell"""
+    shading_elm = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), fill_hex))
+    cell._tc.get_or_add_tcPr().append(shading_elm)
+
+# =======================================================================================
+# FUNGSI UNTUK GENERATE FILE WORD (.DOCX) DENGAN KOP STANDAR INTERNASIONAL
+# =======================================================================================
+def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
+                         client, project, equipment, auto_form_no, date_str, doc_no, rev_no, page_str,
                          drawing_no, standard, description, penetrant_method, removal_method, 
                          brand_name, penetrant_type, developer_type, cleaner_type, 
                          surface_prep, time_exam, scope_exam, data_df):
     
     doc = Document()
     
-    # Atur Margin Halaman (Standard 1 Inch)
+    # Atur Margin Halaman Lebih Proporsional (0.75 Inch / ~1.9 cm)
     sections = doc.sections
     for section in sections:
-        section.top_margin = Inches(1)
-        section.bottom_margin = Inches(1)
-        section.left_margin = Inches(1)
-        section.right_margin = Inches(1)
+        section.top_margin = Inches(0.75)
+        section.bottom_margin = Inches(0.75)
+        section.left_margin = Inches(0.75)
+        section.right_margin = Inches(0.75)
+        section.page_width = Inches(8.27) # A4
+        section.page_height = Inches(11.69)
 
-    # 1. HANDLE LOGO KOP SURAT
-    if logo_bytes is not None:
-        # Tambah logo jika diupload oleh user
-        doc.add_picture(logo_bytes, width=Inches(1.8))
-        p_space = doc.add_paragraph()
-        p_space.paragraph_format.space_after = Pt(12)
+    # -----------------------------------------------------------------------------------
+    # 1. STRUKTUR KOP UTAMA BERDASARKAN GAMBAR (Tabel Grid)
+    # -----------------------------------------------------------------------------------
+    # Total lebar halaman cetak efektif = 8.27 - (0.75 * 2) = 6.77 Inches
+    kop_table = doc.add_table(rows=2, cols=3)
+    kop_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    kop_table.style = 'Table Grid'
+    
+    # Atur Lebar Kolom Kop secara Spesifik
+    # Kolom 0 (Logo Kiri): 1.8" | Kolom 1 (Judul Tengah): 3.1" | Kolom 2 (Logo Kanan Multi): 1.87"
+    col_widths = [Inches(1.80), Inches(3.10), Inches(1.87)]
+    for row in kop_table.rows:
+        for idx, width in enumerate(col_widths):
+            row.cells[idx].width = width
+
+    # Gabungkan baris untuk Kolom 0 dan Kolom 1 (Row 0 dan Row 1 Di-merge)
+    cell_left = kop_table.cell(0, 0).merge(kop_table.cell(1, 0))
+    cell_center = kop_table.cell(0, 1).merge(kop_table.cell(1, 1))
+    
+    # Cell Kanan Atas dan Kanan Bawah dibiarkan terpisah
+    cell_right_top = kop_table.cell(0, 2)
+    cell_right_bottom = kop_table.cell(1, 2)
+
+    # Isi Cell 0: Logo Kiri (Contoh: Trakindo CAT)
+    cell_left.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    p_left = cell_left.paragraphs[0]
+    p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    if logo_left_bytes is not None:
+        p_left.add_run().add_picture(logo_left_bytes, width=Inches(1.5))
     else:
-        # Jika tidak ada logo, buat judul teks standar kop
-        title = doc.add_paragraph()
-        title_run = title.add_run("LIQUID PENETRANT INSPECTION REPORT")
-        title_run.bold = True
-        title_run.font.size = Pt(18)
-        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_left.add_run("[ LOGO KIRI ]").font.color.rgb = RGBColor(150, 150, 150)
 
-    # Judul Dokumen Utama
+    # Isi Cell 1: Judul Proyek Tengah
+    cell_center.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    p_center = cell_center.paragraphs[0]
+    p_center.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_center = p_center.add_run(str(project).upper())
+    run_center.bold = True
+    run_center.font.size = Pt(12)
+    run_center.font.name = 'Arial'
+
+    # Isi Cell 2 (Kanan Atas): Logo Damac Digital
+    cell_right_top.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    p_rt = cell_right_top.paragraphs[0]
+    p_rt.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    if logo_right_top_bytes is not None:
+        p_rt.add_run().add_picture(logo_right_top_bytes, width=Inches(1.5))
+    else:
+        p_rt.add_run("[ LOGO KANAN ATAS ]").font.color.rgb = RGBColor(150, 150, 150)
+
+    # Isi Cell 3 (Kanan Bawah): Logo Cushman & Wakefield
+    cell_right_bottom.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    p_rb = cell_right_bottom.paragraphs[0]
+    p_rb.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    if logo_right_bottom_bytes is not None:
+        p_rb.add_run().add_picture(logo_right_bottom_bytes, width=Inches(1.5))
+    else:
+        p_rb.add_run("[ LOGO KANAN BAWAH ]").font.color.rgb = RGBColor(150, 150, 150)
+
+    # -----------------------------------------------------------------------------------
+    # SUB-HEADER METADATA KOP (Date, Doc No, Rev, Page)
+    # -----------------------------------------------------------------------------------
+    meta_table = doc.add_table(rows=1, cols=4)
+    meta_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    meta_table.style = 'Table Grid'
+    
+    meta_widths = [Inches(1.80), Inches(3.10), Inches(0.80), Inches(1.07)]
+    meta_cells = meta_table.rows[0].cells
+    for idx, width in enumerate(meta_widths):
+        meta_cells[idx].width = width
+        meta_cells[idx].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        set_cell_margins(meta_cells[idx], top=60, bottom=60, start=100, end=100)
+
+    # Isi Meta Data
+    meta_cells[0].paragraphs[0].text = f"Date: {date_str}"
+    meta_cells[1].paragraphs[0].text = f"Doc No.: {doc_no if doc_no else '-'}"
+    meta_cells[2].paragraphs[0].text = f"Rev. {rev_no}"
+    meta_cells[3].paragraphs[0].text = f"Page {page_str}"
+    
+    for cell in meta_cells:
+        cell.paragraphs[0].runs[0].font.size = Pt(9.5)
+        cell.paragraphs[0].runs[0].font.name = 'Arial'
+    meta_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    meta_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Spacer
+    p_space = doc.add_paragraph()
+    p_space.paragraph_format.space_after = Pt(12)
+
+    # Judul Judul Form Utama
     h1 = doc.add_paragraph()
     h1_run = h1.add_run("FINAL LIQUID PENETRANT INSPECTION REPORT")
     h1_run.bold = True
-    h1_run.font.size = Pt(14)
+    h1_run.font.size = Pt(13)
+    h1_run.font.name = 'Arial'
     h1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    h1.paragraph_format.space_after = Pt(18)
+    h1.paragraph_format.space_after = Pt(12)
 
-    # 2. HEADER INFORMATION TABLE (Grid 5 baris x 4 kolom)
+    # -----------------------------------------------------------------------------------
+    # 2. GENERAL HEADER INFORMATION TABLE
+    # -----------------------------------------------------------------------------------
     table_header = doc.add_table(rows=5, cols=4)
+    table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.style = 'Table Grid'
+    
+    # Atur proporsi lebar kolom form data info
+    info_widths = [Inches(1.5), Inches(2.0), Inches(1.5), Inches(1.77)]
     
     headers_data = [
         ["CLIENT", client, "FORM NO", auto_form_no],
         ["PROJECT", project, "DATE", date_str],
-        ["EQUIPMENT / SYSTEM", equipment, "PENETRANT METHOD", f"[x] {penetrant_method}"],
-        ["DRAWING NO", drawing_no, "REMOVAL METHOD", f"[x] {removal_method}"],
+        ["EQUIPMENT / SYSTEM", equipment, "PENETRANT METHOD", f"☑ {penetrant_method}"],
+        ["DRAWING NO", drawing_no, "REMOVAL METHOD", f"☑ {removal_method}"],
         ["STANDARD / DESC", f"{standard} / {description}", "BRAND & MATERIALS", f"{brand_name} ({penetrant_type}/{developer_type})"]
     ]
     
     for row_idx, row_data in enumerate(headers_data):
         row_cells = table_header.rows[row_idx].cells
         for col_idx, text in enumerate(row_data):
+            row_cells[col_idx].width = info_widths[col_idx]
             row_cells[col_idx].text = str(text)
-            # Buat label FIELD A dan FIELD B menjadi Bold
+            row_cells[col_idx].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            set_cell_margins(row_cells[col_idx], top=80, bottom=80, start=100, end=100)
+            
+            p = row_cells[col_idx].paragraphs[0]
+            p.runs[0].font.size = Pt(9.5)
+            p.runs[0].font.name = 'Arial'
             if col_idx in [0, 2]:
-                row_cells[col_idx].paragraphs[0].runs[0].font.bold = True
+                p.runs[0].font.bold = True
+                set_cell_background(row_cells[col_idx], "F8F9FA")
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(6)
+    doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
-    # 3. INSPECTION PARAMETERS SUMMARY TEXT
+    # 3. INSPECTION PARAMETERS SUMMARY
     p_param = doc.add_paragraph()
-    p_param.add_run("Surface Prep: ").bold = True
-    p_param.add_run(f"[x] {surface_prep}   |   ")
-    p_param.add_run("Time of Exam: ").bold = True
-    p_param.add_run(f"[x] {time_exam}   |   ")
-    p_param.add_run("Scope: ").bold = True
-    p_param.add_run(f"[x] {scope_exam}")
-    p_param.paragraph_format.space_after = Pt(18)
+    p_param.paragraph_format.space_before = Pt(6)
+    p_param.paragraph_format.space_after = Pt(12)
+    
+    params = [
+        ("Surface Prep: ", f"☑ {surface_prep}   |   "),
+        ("Time of Exam: ", f"☑ {time_exam}   |   "),
+        ("Scope: ", f"☑ {scope_exam}")
+    ]
+    for lbl, val in params:
+        r_lbl = p_param.add_run(lbl)
+        r_lbl.bold = True
+        r_lbl.font.size = Pt(9.5)
+        r_lbl.font.name = 'Arial'
+        r_val = p_param.add_run(val)
+        r_val.font.size = Pt(9.5)
+        r_val.font.name = 'Arial'
 
     # Sub-heading tabel hasil pengujian
     h2 = doc.add_paragraph()
     h2_run = h2.add_run("Inspection Results Table")
     h2_run.bold = True
-    h2_run.font.size = Pt(12)
+    h2_run.font.size = Pt(11)
+    h2_run.font.name = 'Arial'
+    h2.paragraph_format.space_after = Pt(6)
     
-    # 4. DATA RESULT TABLE
-    # Kolom: PART NAME, WELD NO, THICKNESS, ACC, REJECT, DISCONTINUITIES, REMARKS
+    # -----------------------------------------------------------------------------------
+    # 4. DATA RESULT TABLE (SANGAT RAPI)
+    # -----------------------------------------------------------------------------------
     table_res = doc.add_table(rows=1, cols=7)
+    table_res.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_res.style = 'Table Grid'
     
-    # Atur Judul Kolom Tabel
+    res_widths = [Inches(1.8), Inches(0.8), Inches(1.0), Inches(0.5), Inches(0.6), Inches(1.2), Inches(0.87)]
+    
+    # Header Tabel Hasil
     hdr_cells = table_res.rows[0].cells
     headers_col = ["PART NAME", "WELD NO", "THICKNESS (MM)", "ACC", "REJECT", "TYPES OF DISCONTINUITIES", "REMARKS"]
     for i, title_text in enumerate(headers_col):
+        hdr_cells[i].width = res_widths[i]
         hdr_cells[i].text = title_text
-        hdr_cells[i].paragraphs[0].runs[0].font.bold = True
+        hdr_cells[i].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        set_cell_margins(hdr_cells[i], top=100, bottom=100, start=60, end=60)
+        set_cell_background(hdr_cells[i], "EFEFEF")
         
-        # Tambahkan warna abu-abu tipis pada latar belakang judul tabel (Shading XML)
-        shading_elm = parse_xml(r'<w:shd {} w:fill="EFEFEF"/>'.format(nsdecls('w')))
-        hdr_cells[i]._tc.get_or_add_tcPr().append(shading_elm)
+        p = hdr_cells[i].paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.runs[0].font.bold = True
+        p.runs[0].font.size = Pt(9)
+        p.runs[0].font.name = 'Arial'
 
-    # Masukkan baris data dari DataFrame
+    # Isi Data Row dari DataFrame
     for index, row in data_df.iterrows():
         row_cells = table_res.add_row().cells
+        for idx in range(7):
+            row_cells[idx].width = res_widths[idx]
+            row_cells[idx].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            set_cell_margins(row_cells[idx], top=80, bottom=80, start=60, end=60)
+            
         row_cells[0].text = str(row["PART NAME"])
         row_cells[1].text = str(row["WELD NO"])
-        row_cells[2].text = str(row["THICKNESS (MM)"])
+        row_cells[2].text = f"{row['THICKNESS (MM)']:.2f}" if isinstance(row['THICKNESS (MM)'], (int, float)) else str(row['THICKNESS (MM)'])
         row_cells[3].text = "☑" if row["RESULT"] == "ACC" else "☐"
         row_cells[4].text = "☑" if row["RESULT"] == "REJECT" else "☐"
         row_cells[5].text = str(row["TYPES OF DISCONTINUITIES"])
         row_cells[6].text = str(row["REMARKS"])
         
-    doc.add_paragraph().paragraph_format.space_after = Pt(24)
+        # Center alignment untuk data angka & checkmark status
+        for col_idx in [1, 2, 3, 4]:
+            row_cells[col_idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
+        for idx in range(7):
+            p = row_cells[idx].paragraphs[0]
+            p.runs[0].font.size = Pt(9)
+            p.runs[0].font.name = 'Arial'
+            
+    doc.add_paragraph().paragraph_format.space_after = Pt(20)
 
-    # 5. SIGNATURE SECTION (3 Kolom Sejajar)
+    # -----------------------------------------------------------------------------------
+    # 5. SIGNATURE SECTION
+    # -----------------------------------------------------------------------------------
     table_sig = doc.add_table(rows=2, cols=3)
-    # Hapus border luar agar terlihat seperti struktur layout kosong
+    table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
     
+    sig_widths = [Inches(2.25), Inches(2.25), Inches(2.27)]
     sig_titles = ["CHECKED BY", "REVIEWED BY", "WITNESSED BY"]
+    
     for idx, title_text in enumerate(sig_titles):
-        table_sig.rows[0].cells[idx].text = title_text
-        table_sig.rows[0].cells[idx].paragraphs[0].runs[0].font.bold = True
-        table_sig.rows[0].cells[idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell_title = table_sig.rows[0].cells[idx]
+        cell_title.width = sig_widths[idx]
+        cell_title.text = title_text
+        p_t = cell_title.paragraphs[0]
+        p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_t.runs[0].font.bold = True
+        p_t.runs[0].font.size = Pt(9.5)
+        p_t.runs[0].font.name = 'Arial'
         
-        # Jarak vertikal tanda tangan kosong
-        p_sig_blank = table_sig.rows[1].cells[idx].paragraphs[0]
-        p_sig_blank.text = "\n\n\n\n__________________\nName:"
-        p_sig_blank.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell_box = table_sig.rows[1].cells[idx]
+        cell_box.width = sig_widths[idx]
+        p_b = cell_box.paragraphs[0]
+        p_b.text = "\n\n\n\n__________________\nName:"
+        p_b.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_b.runs[0].font.size = Pt(9.5)
+        p_b.runs[0].font.name = 'Arial'
 
-    # Simpan dokumen ke memory byte stream buffer agar bisa didownload via Streamlit
     bio = io.BytesIO()
     doc.save(bio)
     bio.seek(0)
@@ -157,25 +314,33 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant secara otomatis.")
 
     # -----------------------------------------------------------------------------------
-    # FITUR INPUT KOP LOGO PERUSAHAAN
+    # MULTI COMPONENT LOGO UPLOADER (MENIRU GAMBAR)
     # -----------------------------------------------------------------------------------
-    st.subheader("Logo Perusahaan (Kop Surat)")
-    uploaded_logo = st.file_uploader("Unggah Logo untuk Kop Report (Format: PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
+    st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
+    log_col1, log_col2, log_col3 = st.columns(3)
     
-    if uploaded_logo is not None:
-        st.image(uploaded_logo, width=200, caption="Preview Logo Kop Surat")
-    else:
-        st.info("💡 Anda belum mengunggah logo. Cetakan report akan menggunakan teks standar tanpa logo.")
+    with log_col1:
+        up_logo_left = st.file_uploader("1. Logo Kiri (Main Contractor / Owner)", type=["png", "jpg", "jpeg"])
+        if up_logo_left: st.image(up_logo_left, width=130, caption="Preview Logo Kiri")
+        
+    with log_col2:
+        up_logo_rt = st.file_uploader("2. Logo Kanan Atas (Project Brand)", type=["png", "jpg", "jpeg"])
+        if up_logo_rt: st.image(up_logo_rt, width=130, caption="Preview Kanan Atas")
+        
+    with log_col3:
+        up_logo_rb = st.file_uploader("3. Logo Kanan Bawah (Sub-Consultant / QA)", type=["png", "jpg", "jpeg"])
+        if up_logo_rb: st.image(up_logo_rb, width=130, caption="Preview Kanan Bawah")
 
     st.markdown("---")
 
     # Otomatisasi Form Number & Tanggal berdasarkan waktu berjalan
     current_date = datetime.now()
-    date_str = current_date.strftime("%d %B %Y").upper() 
+    date_str = current_date.strftime("%d-%m-%Y") # Sesuai format gambar DD-MM-YYYY
+    date_display_str = current_date.strftime("%d %B %Y").upper() 
     month_year_slug = current_date.strftime("%B/%Y").upper() 
     auto_form_no = f"05/LPI/DAMAC/{month_year_slug}" 
 
-    st.subheader("Header Information")
+    st.subheader("📝 Header & Document Control Information")
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -189,11 +354,14 @@ if main_menu == "LIQUID PENETRANT REPORT":
         drawing_no = st.text_input("Drawing No", value="ISO-JKT01-003") 
 
     with col3:
+        doc_no_input = st.text_input("Doc No. (Kop)", value="DOC-DAMAC-LPI-002")
+        rev_no_input = st.text_input("Rev. No (Kop)", value="0")
+        page_input = st.text_input("Page Info (Kop)", value="2 of 5")
         standard = st.text_input("Standard", value="ASME B31.3")
         description = st.text_input("Description", value="TYPE 1")
 
     st.markdown("---")
-    st.subheader("Inspection Parameters")
+    st.subheader("🔍 Inspection Parameters")
     col_p1, col_p2, col_p3 = st.columns(3)
 
     with col_p1:
@@ -212,7 +380,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
         scope_exam = st.radio("Scope of Examination", ["BASE METAL", "WELD METAL", "BACK CHIPPING", "OTHER"], index=1)
 
     st.markdown("---")
-    st.subheader("Weld Inspection Results Data")
+    st.subheader("📊 Weld Inspection Results Data")
 
     part_options_1 = ["PIPE", "PLATE", "ELBOW", "TEE", "FLANGE"]
     part_options_2 = ["FLANGE", "ELBOW", "EQUAL TEE", "PIPE", "VALVE"]
@@ -273,46 +441,70 @@ if main_menu == "LIQUID PENETRANT REPORT":
 
     st.markdown("---")
     
-    # Aksi Layouting dan Download Dokumen Word (.docx)
+    # Kumpulan Pemrosesan Buffer Byte Gambar
+    logo_l_io = io.BytesIO(up_logo_left.getvalue()) if up_logo_left else None
+    logo_rt_io = io.BytesIO(up_logo_rt.getvalue()) if up_logo_rt else None
+    logo_rb_io = io.BytesIO(up_logo_rb.getvalue()) if up_logo_rb else None
+
     col_btn1, col_btn2 = st.columns([2, 8])
-    
     with col_btn1:
         generate_layout = st.button("🚀 Generate Screen Layout")
         
     with col_btn2:
-        # Convert UploadedLogo ke format bytes stream jika ada berkas terunggah
-        logo_bytes_stream = io.BytesIO(uploaded_logo.getvalue()) if uploaded_logo is not None else None
-        
-        # Proses pembuatan dokumen Word langsung di background
+        # Panggil fungsi generate Word dengan 3 opsi logo baru beserta dokumen kontrolnya
         docx_buffer = generate_docx_report(
-            logo_bytes=logo_bytes_stream, client=client, project=project, equipment=equipment,
-            auto_form_no=auto_form_no, date_str=date_str, drawing_no=drawing_no, standard=standard,
-            description=description, penetrant_method=penetrant_method, removal_method=removal_method,
+            logo_left_bytes=logo_l_io, logo_right_top_bytes=logo_rt_io, logo_right_bottom_bytes=logo_rb_io,
+            client=client, project=project, equipment=equipment, auto_form_no=auto_form_no, 
+            date_str=date_str, doc_no=doc_no_input, rev_no=rev_no_input, page_str=page_input,
+            drawing_no=drawing_no, standard=standard, description=description, 
+            penetrant_method=penetrant_method, removal_method=removal_method,
             brand_name=brand_name, penetrant_type=penetrant_type, developer_type=developer_type,
             cleaner_type=cleaner_type, surface_prep=surface_prep, time_exam=time_exam,
             scope_exam=scope_exam, data_df=edited_weld_df
         )
         
-        # Tombol Download File Word (.docx) resmi hasil generate dokumen
         st.download_button(
-            label="📥 Download Word Report (.docx)",
+            label="📥 Download Official Word Report (.docx)",
             data=docx_buffer,
             file_name=f"LPI_Report_{auto_form_no.replace('/', '_')}.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
-    # Menampilkan Layout Preview di Browser jika Tombol ditekan
+    # Preview Layout di Web Browser
     if generate_layout:
-        st.markdown("## 📄 FINAL LIQUID PENETRANT INSPECTION REPORT")
-        if uploaded_logo is not None:
-            st.image(uploaded_logo, width=180)
-            st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("## 📄 PREVIEW REPORT LAYOUT")
+        
+        # Simulasi KOP Box di Browser
+        st.markdown(
+            f"""
+            <div style="border:2px solid #333; padding:15px; border-radius:5px; background-color:#FAFAFA">
+                <table style="width:100%; border-collapse:collapse; border:none;">
+                    <tr>
+                        <td style="width:25%; text-align:center; border-right:1px solid #ccc; padding:10px;"><b>[ LOGO KIRI ]</b><br><small>Main / Owner</small></td>
+                        <td style="width:50%; text-align:center; border-right:1px solid #ccc; padding:10px;"><h4>{project.upper()}</h4></td>
+                        <td style="width:25%; text-align:center; padding:10px;"><b>[ LOGO KANAN ATAS ]</b><hr style="margin:5px 0;"><b>[ LOGO KANAN BAWAH ]</b></td>
+                    </tr>
+                </table>
+                <table style="width:100%; margin-top:10px; border-top:2px solid #333; font-size:12px;">
+                    <tr>
+                        <td><b>Date:</b> {date_str}</td>
+                        <td><b>Doc No:</b> {doc_no_input if doc_no_input else '-'}</td>
+                        <td style="text-align:center;"><b>Rev:</b> {rev_no_input}</td>
+                        <td style="text-align:right;"><b>Page:</b> {page_input}</td>
+                    </tr>
+                </table>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+        
+        st.markdown("<br>", unsafe_allow_html=True)
         
         header_summary = pd.DataFrame({
             "FIELD A": ["CLIENT", "PROJECT", "EQUIPMENT / SYSTEM", "DRAWING NO", "STANDARD / DESC"],
             "VALUE A": [client, project, equipment, drawing_no, f"{standard} / {description}"],
             "FIELD B": ["FORM NO", "DATE", "PENETRANT METHOD", "REMOVAL METHOD", "BRAND & MATERIALS"],
-            "VALUE B": [auto_form_no, date_str, f"☑ {penetrant_method}", f"☑ {removal_method}", f"{brand_name} ({penetrant_type}/{developer_type})"]
+            "VALUE B": [auto_form_no, date_display_str, f"☑ {penetrant_method}", f"☑ {removal_method}", f"{brand_name} ({penetrant_type}/{developer_type})"]
         })
         st.table(header_summary)
         
@@ -325,18 +517,3 @@ if main_menu == "LIQUID PENETRANT REPORT":
         
         display_df = display_df[["PART NAME", "WELD NO", "THICKNESS (MM)", "ACC", "REJECT", "TYPES OF DISCONTINUITIES", "REMARKS"]]
         st.dataframe(display_df, use_container_width=True)
-        
-        st.write("#### Signatures")
-        col_f1, col_f2, col_f3 = st.columns(3)
-        with col_f1:
-            st.write("**CHECKED BY**")
-            st.write("\n\n\n__________________")
-            st.write("Name:")
-        with col_f2:
-            st.write("**REVIEWED BY**")
-            st.write("\n\n\n__________________")
-            st.write("Name:")
-        with col_f3:
-            st.write("**WITNESSED BY**")
-            st.write("\n\n\n__________________")
-            st.write("Name:")

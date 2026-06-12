@@ -58,7 +58,7 @@ def add_xml_field(run, field_name):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # =======================================================================================
-# FUNGSI UTAMA GENERATE .DOCX
+# FUNGSI UTAMA GENERATE .DOCX (KOP LEBIH RAMPING)
 # =======================================================================================
 def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
@@ -69,21 +69,19 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     
     doc = Document()
     
-    # -----------------------------------------------------------------------------------
-    # PERBAIKAN MARGIN: Diperbesar agar ada jarak (tidak mepet) antara Header & Body
-    # -----------------------------------------------------------------------------------
+    # Atur Margin Halaman Cetak Standar Internasional A4
     sections = doc.sections
     for section in sections:
-        section.top_margin = Inches(2.8)      # Diperbesar dari 2.4 ke 2.8 agar body tidak menempel ke header
-        section.bottom_margin = Inches(1.0)   # Diperbesar agar bagian bawah/footer tidak terlalu mepet kertas
+        section.top_margin = Inches(2.1)       # PERBAIKAN: Diturunkan dari 2.8 ke 2.1 agar kop tidak terlalu tinggi
+        section.bottom_margin = Inches(1.0)    
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.75)
-        section.header_distance = Inches(0.45) # Jarak header ditarik sedikit dari tepi atas
+        section.header_distance = Inches(0.4)  # Jarak header didekatkan ke batas atas kertas
         section.page_width = Inches(8.27)
         section.page_height = Inches(11.69)
 
     # -----------------------------------------------------------------------------------
-    # 1. INTEGRASI KOP SURAT KE NATIVE WORD HEADER
+    # 1. INTEGRASI KOP SURAT KE NATIVE WORD HEADER (RAMPING & PROPORSIAL)
     # -----------------------------------------------------------------------------------
     header = doc.sections[0].header
     for p in header.paragraphs:
@@ -141,11 +139,12 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     else:
         p_rb.add_run("[ LOGO KANAN BAWAH ]").font.color.rgb = RGBColor(160, 160, 160)
 
-    # Baris Metadata Kop
+    # Baris Metadata Kop Surat
     meta_cells = kop_table.rows[2].cells
     for cell in meta_cells:
         cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-        set_cell_margins(cell, top=60, bottom=60, start=100, end=100)
+        # PERBAIKAN: Padding dxa diperkecil dari 60 ke 30 agar tinggi baris menjadi sangat tipis/ramping
+        set_cell_margins(cell, top=30, bottom=30, start=100, end=100)
 
     meta_cells[0].paragraphs[0].text = f"Date: {date_str}"
     meta_cells[1].paragraphs[0].text = f"Doc No.: {doc_no if doc_no else '-'}"
@@ -173,7 +172,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     h1_run.font.size = Pt(13)
     h1_run.font.name = 'Arial'
     h1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    h1.paragraph_format.space_before = Pt(18) # PERBAIKAN: Menambah spasi atas yang eksplisit sebelum judul
+    h1.paragraph_format.space_before = Pt(6) # PERBAIKAN: Spasi kosong atas dipangkas menjadi Pt(6) agar rapat
     h1.paragraph_format.space_after = Pt(12)
 
     # Tabel Informasi Utama
@@ -270,9 +269,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
-    # -----------------------------------------------------------------------------------
-    # SEKSI VERIFIKASI TANDA TANGAN (1 BARIS UTAMA - ANTI SPLIT)
-    # -----------------------------------------------------------------------------------
+    # Seksi Verifikasi Tanda Tangan (1 Baris - Anti Terbelah Halaman)
     table_sig = doc.add_table(rows=1, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
@@ -305,7 +302,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc.add_paragraph()
 
     # -----------------------------------------------------------------------------------
-    # AREA LAMPIRAN FOTO: NATIVE ASPECT RATIO (ANTI GEPENG) & JARAK AMAN
+    # AREA LAMPIRAN FOTO: LEBAR STANDAR SERAGAM & ASPEK RASIO TERKUNCI (ANTI GEPENG)
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -320,7 +317,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         h_app.add_run("APPENDIX: PHOTOGRAPHIC DOCUMENTATION PER-JOINT").bold = True
         h_app.runs[-1].font.size = Pt(12)
         h_app.runs[-1].font.name = 'Arial'
-        h_app.paragraph_format.space_before = Pt(18) # PERBAIKAN: Menambah spasi atas di lampiran
+        h_app.paragraph_format.space_before = Pt(12)
         h_app.paragraph_format.space_after = Pt(14)
         
         for _, row in data_df.iterrows():
@@ -357,7 +354,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             photo_table.rows[1].cells[0].width = Inches(3.38)
             photo_table.rows[1].cells[1].width = Inches(3.39)
             
-            # Slot Foto Kiri: Red Apply (Tanpa paksaan tinggi = Anti Gepeng)
+            # Slot Foto Kiri: Red Apply
             cell_r_img = photo_table.cell(0, 0)
             cell_r_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(cell_r_img, top=180, bottom=180, start=180, end=180)
@@ -378,7 +375,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             r_cap_run.font.size = Pt(8.5)
             r_cap_run.font.name = 'Arial'
             
-            # Slot Foto Kanan: Developer Apply (Tanpa paksaan tinggi = Anti Gepeng)
+            # Slot Foto Kanan: Developer Apply
             cell_d_img = photo_table.cell(0, 1)
             cell_d_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(cell_d_img, top=180, bottom=180, start=180, end=180)
@@ -532,7 +529,6 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.write("Silakan buka expander di bawah ini untuk memasukkan foto spesifik pada masing-masing nomor joint:")
     
     master_joint_photos = {}
-    
     for idx, row in edited_weld_df.iterrows():
         w_id = str(row["WELD NO"])
         p_name = str(row["PART NAME"])
@@ -623,14 +619,3 @@ if main_menu == "LIQUID PENETRANT REPORT":
                 st.write("\n\n\n__________________")
                 st.write("Name:")
                 st.write("Date:")
-                
-        # Preview Lampiran Foto Per-Joint di Web
-        st.write(f"#### 📸 Attachment Preview: Per-Joint Photos")
-        for key_w, media in master_joint_photos.items():
-            if media["red"] or media["dev"]:
-                st.write(f"**Joint Sambungan Las No: {key_w}**")
-                p_col1, p_col2 = st.columns(2)
-                with p_col1:
-                    if media["red"]: st.image(media["red"], width=180, caption=f"Red Apply Joint {key_w}")
-                with p_col2:
-                    if media["dev"]: st.image(media["dev"], width=180, caption=f"Dev Apply Joint {key_w}")

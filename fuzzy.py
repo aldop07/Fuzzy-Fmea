@@ -65,7 +65,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     
     sections = doc.sections
     for section in sections:
-        section.top_margin = Inches(2.1)
+        section.top_margin = Inches(1.5)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.75)

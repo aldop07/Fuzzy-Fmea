@@ -495,7 +495,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
             with col_rej1:
                 new_discontinuity = st.selectbox("Types of Discontinuities", discontinuity_options)
             with col_rej2:
-                new_remarks = st.text_input("Remarks (Tindakan)", value="Repair")
+                new_remarks = st.text_input("Remarks (Tindakan)", value="Repair Required")
 
         if st.button("Masukkan ke Tabel"):
             combined_part_name = f"{part_1} – {part_2}"

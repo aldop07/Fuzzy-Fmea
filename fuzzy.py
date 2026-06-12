@@ -363,7 +363,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             cell_r_cap = photo_table.cell(1, 0)
             set_cell_background(cell_r_cap, "F8F9FA")
             cell_r_cap.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            r_cap_run = cell_r_cap.paragraphs[0].add_run(f"Joint {weld_no_str}: Penetrant Application (Red Apply)")
+            r_cap_run = cell_r_cap.paragraphs[0].add_run(f"Joint {weld_no_str}: Penetrant Application")
             r_cap_run.font.size = Pt(8.5)
             r_cap_run.font.name = 'Arial'
             
@@ -566,7 +566,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
                         idx_disc = discontinuity_options.index(current_disc) if current_disc in discontinuity_options else 0
                         new_disc = st.selectbox("Jenis Cacat", discontinuity_options, index=idx_disc, key=f"disc_{w_id}_{idx}")
                     with eval_c3:
-                        new_rem = st.text_input("Tindakan (Remarks)", value=current_rem if current_rem != "-" else "Repair", key=f"rem_{w_id}_{idx}")
+                        new_rem = st.text_input("Tindakan (Remarks)", value=current_rem if current_rem != "-" else "Repair Required", key=f"rem_{w_id}_{idx}")
                 elif new_res == "ACC":
                     new_disc = "-"
                     new_rem = "-"

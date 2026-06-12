@@ -255,7 +255,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
     # -----------------------------------------------------------------------------------
-    # SEKSI VERIFIKASI TANDA TANGAN (1 Baris - Manual Tulis Tangan)
+    # SEKSI VERIFIKASI TANDA TANGAN 
     # -----------------------------------------------------------------------------------
     table_sig = doc.add_table(rows=1, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -287,7 +287,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc.add_paragraph()
 
     # -----------------------------------------------------------------------------------
-    # AREA LAMPIRAN FOTO (ANTI GEPENG)
+    # AREA LAMPIRAN FOTO
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -402,7 +402,6 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
     st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant.")
 
-    # SIDEBAR KONTROL SLIDER KOMPONEN
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
     logo_w_setting = st.sidebar.slider("Lebar Logo Kop Surat (Inchi)", min_value=0.8, max_value=2.2, value=1.4, step=0.05)
     photo_w_setting = st.sidebar.slider("Lebar Cetak Foto Lampiran (Inchi)", min_value=1.5, max_value=3.2, value=2.4, step=0.05)
@@ -473,6 +472,9 @@ if main_menu == "LIQUID PENETRANT REPORT":
             {"PART NAME": "PIPE – EQUAL TEE", "WELD NO": "6", "THICKNESS (MM)": 3.91, "RESULT": "PENDING", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"}
         ])
 
+    # -----------------------------------------------------------------------------------
+    # FITUR TAMBAH BARIS & HAPUS BARIS
+    # -----------------------------------------------------------------------------------
     with st.expander("➕ Tambah Baris Hasil Las Baru"):
         c1_a, c1_b, c2, c3 = st.columns([2, 2, 1.5, 1.5])
         with c1_a: part_1 = st.selectbox("Pilihan 1 (Base)", part_options_1)
@@ -488,6 +490,19 @@ if main_menu == "LIQUID PENETRANT REPORT":
                        "RESULT": "PENDING", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"}
             st.session_state.weld_data = pd.concat([st.session_state.weld_data, pd.DataFrame([new_row])], ignore_index=True)
             st.success(f"Data '{combined_part_name}' ditambahkan. Silakan upload fotonya di bawah.")
+
+    # FITUR TAMBAHAN: EXPLICIT DELETE ROW EXPANDER
+    with st.expander("🗑️ Hapus Baris Hasil Las (Jika Salah)"):
+        if len(st.session_state.weld_data) > 0:
+            del_options = st.session_state.weld_data.apply(lambda x: f"Joint No: {x['WELD NO']} ({x['PART NAME']})", axis=1).tolist()
+            del_selected = st.selectbox("Pilih baris yang ingin dihapus:", del_options)
+            if st.button("Hapus Baris Ini"):
+                del_idx = del_options.index(del_selected)
+                st.session_state.weld_data = st.session_state.weld_data.drop(del_idx).reset_index(drop=True)
+                st.success("Baris berhasil dihapus!")
+                st.rerun()
+        else:
+            st.info("Tabel masih kosong.")
 
     all_combined_options = [f"{p1} – {p2}" for p1 in part_options_1 for p2 in part_options_2]
     existing_parts = st.session_state.weld_data["PART NAME"].unique().tolist()
@@ -513,9 +528,6 @@ if main_menu == "LIQUID PENETRANT REPORT":
     master_joint_photos = {}
     need_rerun = False
     
-    # =========================================================================
-    # PERBAIKAN: MEMBUNGKUS AREA FOTO KE DALAM CONTAINER AGAR BISA DI SCROLL
-    # =========================================================================
     with st.container(height=600):
         for idx, row in st.session_state.weld_data.iterrows():
             w_id = str(row["WELD NO"])

@@ -1,3 +1,15 @@
+Penyebab utama dari masalah pada gambar yang Anda unggah adalah karena instruksi *floating position* (memaksa tabel ke paling bawah margin) berbenturan dengan sistem *auto-repeat header* pada halaman 2. Hal ini membuat tata letak Microsoft Word menjadi *error* dan memotong baris tabel tanda tangan menjadi dua bagian yang berjauhan.
+
+**Solusi Paling Aman dan Anti-Gagal (Bulletproof):**
+Kita akan membuang instruksi *floating* yang bermasalah tersebut, dan mengubah arsitektur tabel tanda tangan menjadi **Tabel 1 Baris (1-Row Table)**.
+
+Judul ("CHECKED / EXAMINED") dan isian ("Name & Date") akan digabungkan ke dalam **satu sel yang sama**. Dengan menerapkan kode `prevent_row_split` pada 1 baris ini, Microsoft Word **secara mutlak tidak akan bisa memisahkan** judul dan isian tanda tangan ke halaman yang berbeda. Jika tidak muat di halaman 1, maka *seluruh blok* tanda tangan akan turun bersama-sama secara utuh dan rapi ke halaman 2.
+
+Berikut adalah *source code* lengkap yang sudah diperbaiki secara menyeluruh:
+
+### Full Source Code Python (Streamlit + `python-docx`)
+
+```python
 import numpy as np
 import streamlit as st
 import pandas as pd
@@ -623,3 +635,5 @@ if main_menu == "LIQUID PENETRANT REPORT":
                     if media["red"]: st.image(media["red"], width=180, caption=f"Red Apply Joint {key_w}")
                 with p_col2:
                     if media["dev"]: st.image(media["dev"], width=180, caption=f"Dev Apply Joint {key_w}")
+
+```

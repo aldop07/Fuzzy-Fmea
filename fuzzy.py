@@ -48,12 +48,12 @@ if main_menu == "LIQUID PENETRANT REPORT":
     with col1:
         client = st.text_input("Client", value="PT. TRAKINDO UTAMA")
         project = st.text_input("Project", value="DAMAC DIGITAL JKT01 DAY 2")
-        equipment = st.text_input("Equipment / System", value="FUEL PIPE") # Diisi manual oleh user 
+        equipment = st.text_input("Equipment / System", value="FUEL PIPE") 
 
     with col2:
         st.text_input("Form No (Otomatis)", value=auto_form_no, disabled=True)
         st.text_input("Date (Otomatis)", value=date_str, disabled=True)
-        drawing_no = st.text_input("Drawing No", value="ISO-JKT01-003") # Diisi manual oleh user 
+        drawing_no = st.text_input("Drawing No", value="ISO-JKT01-003") 
 
     with col3:
         standard = st.text_input("Standard", value="ASME B31.3")
@@ -81,6 +81,9 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.markdown("---")
     st.subheader("Weld Inspection Results Data")
 
+    # Daftar diskontinuitas standar untuk lasan
+    discontinuity_options = ["Crack", "Porosity", "Slag Inclusion", "Incomplete Fusion", "Incomplete Penetration", "Undercut", "Linear Indication", "Rounded Indication"]
+
     # Inisialisasi session state untuk menampung tabel data pengujian las jika belum ada
     if 'weld_data' not in st.session_state:
         st.session_state.weld_data = pd.DataFrame([
@@ -100,16 +103,40 @@ if main_menu == "LIQUID PENETRANT REPORT":
         with c4:
             new_result = st.selectbox("Result", ["ACC", "REJECT"])
             
+        # Logika Kondisional: Muncul input tambahan jika status REJECT
+        new_discontinuity = "-"
+        if new_result == "REJECT":
+            new_discontinuity = st.selectbox("Types of Discontinuities", discontinuity_options)
+            new_remarks = st.text_input("Remarks", value="Repair Required")
+        else:
+            new_remarks = "-"
+
         if st.button("Masukkan ke Tabel"):
             new_row = {
                 "PART NAME": new_part, "WELD NO": new_weld_no, "THICKNESS (MM)": new_thickness,
-                "RESULT": new_result, "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"
+                "RESULT": new_result, "TYPES OF DISCONTINUITIES": new_discontinuity, "REMARKS": new_remarks
             }
             st.session_state.weld_data = pd.concat([st.session_state.weld_data, pd.DataFrame([new_row])], ignore_index=True)
             st.success("Data baru berhasil ditambahkan ke tabel!")
 
-    # Menggunakan st.data_editor agar user bisa memodifikasi cell layaknya excel spreadsheet
-    edited_weld_df = st.data_editor(st.session_state.weld_data, num_rows="dynamic", use_container_width=True)
+    # Menggunakan st.data_editor dengan column_config agar user bisa memilih drop down di dalam tabel langsung
+    edited_weld_df = st.data_editor(
+        st.session_state.weld_data, 
+        num_rows="dynamic", 
+        use_container_width=True,
+        column_config={
+            "RESULT": st.column_config.SelectboxColumn(
+                "RESULT",
+                options=["ACC", "REJECT"],
+                required=True
+            ),
+            "TYPES OF DISCONTINUITIES": st.column_config.SelectboxColumn(
+                "TYPES OF DISCONTINUITIES",
+                options=["-"] + discontinuity_options,
+                required=True
+            )
+        }
+    )
 
     st.markdown("---")
     

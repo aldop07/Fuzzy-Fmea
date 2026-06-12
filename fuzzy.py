@@ -52,14 +52,14 @@ def add_xml_field(run, field_name):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # =======================================================================================
-# FUNGSI GENERATE .DOCX DENGAN KOP SURAT, AUTO-REPEAT HEADER, & LAMPIRAN FOTO INSPEKSI
+# FUNGSI UTAMA GENERATE .DOCX DENGAN LAMPIRAN FOTO PER-JOINT
 # =======================================================================================
 def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
                          drawing_no, standard, description, penetrant_method, removal_method, 
                          brand_name, penetrant_type, developer_type, cleaner_type, 
                          surface_prep, time_exam, scope_exam, data_df, logo_width_inch,
-                         img_penetrant_bytes, img_developer_bytes):
+                         dict_joint_photos):
     
     doc = Document()
     
@@ -75,7 +75,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         section.page_height = Inches(11.69)
 
     # -----------------------------------------------------------------------------------
-    # 1. INTEGRASI KOP SURAT KE NATIVE WORD HEADER (UKURAN KOLOM SIMETRIS)
+    # 1. INTEGRASI KOP SURAT KE NATIVE WORD HEADER
     # -----------------------------------------------------------------------------------
     header = doc.sections[0].header
     for p in header.paragraphs:
@@ -91,13 +91,13 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         for idx, width in enumerate(col_widths):
             row.cells[idx].width = width
 
-    # Proses Merging Kolom Sesuai Blueprint
+    # Merging Kolom Kop
     cell_left = kop_table.cell(0, 0).merge(kop_table.cell(1, 0))          
     cell_center = kop_table.cell(0, 1).merge(kop_table.cell(1, 1))        
     cell_right_top = kop_table.cell(0, 2).merge(kop_table.cell(0, 3))     
     cell_right_bottom = kop_table.cell(1, 2).merge(kop_table.cell(1, 3))  
 
-    # Mengisi Konten Logo Kiri
+    # Logo Kiri
     cell_left.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_left = cell_left.paragraphs[0]
     p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -106,7 +106,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     else:
         p_left.add_run("[ LOGO KIRI ]").font.color.rgb = RGBColor(160, 160, 160)
 
-    # Mengisi Konten Judul Tengah
+    # Judul Tengah
     cell_center.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_center = cell_center.paragraphs[0]
     p_center.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -115,7 +115,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     run_center.font.size = Pt(11)
     run_center.font.name = 'Arial'
 
-    # Mengisi Konten Logo Kanan Atas
+    # Logo Kanan Atas
     cell_right_top.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_rt = cell_right_top.paragraphs[0]
     p_rt.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -124,7 +124,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     else:
         p_rt.add_run("[ LOGO KANAN ATAS ]").font.color.rgb = RGBColor(160, 160, 160)
 
-    # Mengisi Konten Logo Kanan Bawah
+    # Logo Kanan Bawah
     cell_right_bottom.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_rb = cell_right_bottom.paragraphs[0]
     p_rb.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -133,7 +133,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     else:
         p_rb.add_run("[ LOGO KANAN BAWAH ]").font.color.rgb = RGBColor(160, 160, 160)
 
-    # Mengisi Baris ke-3 (Metadata Dokumen Kontrol)
+    # Baris Metadata
     meta_cells = kop_table.rows[2].cells
     for cell in meta_cells:
         cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -143,7 +143,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     meta_cells[1].paragraphs[0].text = f"Doc No.: {doc_no if doc_no else '-'}"
     meta_cells[2].paragraphs[0].text = f"Rev. {rev_no}"
     
-    # Dynamic Page Numbering
     p_page = meta_cells[3].paragraphs[0]
     p_page.text = "Page "
     add_xml_field(p_page.add_run(), "PAGE")
@@ -168,12 +167,12 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     h1.alignment = WD_ALIGN_PARAGRAPH.CENTER
     h1.paragraph_format.space_after = Pt(12)
 
-    # Tabel Informasi Umum
+    # Tabel Informasi Utama
     table_header = doc.add_table(rows=5, cols=4)
     table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.style = 'Table Grid'
-    
     info_widths = [Inches(1.5), Inches(2.0), Inches(1.5), Inches(1.77)]
+    
     headers_data = [
         ["CLIENT", client, "FORM NO", auto_form_no],
         ["PROJECT", project, "DATE", date_str],
@@ -190,7 +189,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             row_cells[col_idx].text = str(text)
             row_cells[col_idx].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(row_cells[col_idx], top=80, bottom=80, start=100, end=100)
-            
             p = row_cells[col_idx].paragraphs[0]
             p.runs[0].font.size = Pt(9.5)
             p.runs[0].font.name = 'Arial'
@@ -198,43 +196,32 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
                 p.runs[0].font.bold = True
                 set_cell_background(row_cells[col_idx], "F8F9FA")
 
-    # Parameter Pengujian
+    # Parameter Teks
     p_param = doc.add_paragraph()
     p_param.paragraph_format.space_before = Pt(10)
     p_param.paragraph_format.space_after = Pt(12)
-    
-    params = [
-        ("Surface Prep: ", f"☑ {surface_prep}   |   "),
-        ("Time of Exam: ", f"☑ {time_exam}   |   "),
-        ("Scope: ", f"☑ {scope_exam}")
-    ]
+    params = [("Surface Prep: ", f"☑ {surface_prep}   |   "), ("Time of Exam: ", f"☑ {time_exam}   |   "), ("Scope: ", f"☑ {scope_exam}")]
     for lbl, val in params:
-        r_lbl = p_param.add_run(lbl)
-        r_lbl.bold = True
-        r_lbl.font.size = Pt(9.5)
-        r_lbl.font.name = 'Arial'
-        r_val = p_param.add_run(val)
-        r_val.font.size = Pt(9.5)
-        r_val.font.name = 'Arial'
+        p_param.add_run(lbl).bold = True
+        p_param.runs[-1].font.size = Pt(9.5)
+        p_param.runs[-1].font.name = 'Arial'
+        p_param.add_run(val).font.size = Pt(9.5)
+        p_param.runs[-1].font.name = 'Arial'
 
+    # Tabel Hasil Indikasi Las
     h2 = doc.add_paragraph()
-    h2_run = h2.add_run("Inspection Results Table")
-    h2_run.bold = True
-    h2_run.font.size = Pt(11)
-    h2_run.font.name = 'Arial'
-    h2.paragraph_format.space_after = Pt(6)
+    h2.add_run("Inspection Results Table").bold = True
+    h2.runs[-1].font.size = Pt(11)
+    h2.runs[-1].font.name = 'Arial'
     
-    # Tabel Hasil Utama (Auto Repeat Header)
     table_res = doc.add_table(rows=1, cols=7)
     table_res.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_res.style = 'Table Grid'
-    
     res_widths = [Inches(1.8), Inches(0.7), Inches(1.1), Inches(0.5), Inches(0.6), Inches(1.2), Inches(0.87)]
     
     hdr_cells = table_res.rows[0].cells
-    set_repeat_header(table_res.rows[0]) 
+    set_repeat_header(table_res.rows[0])
     prevent_row_split(table_res.rows[0])
-    
     headers_col = ["PART NAME", "WELD NO", "THICKNESS (MM)", "ACC", "REJECT", "TYPES OF DISCONTINUITIES", "REMARKS"]
     for i, title_text in enumerate(headers_col):
         hdr_cells[i].width = res_widths[i]
@@ -242,7 +229,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         hdr_cells[i].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
         set_cell_margins(hdr_cells[i], top=100, bottom=100, start=60, end=60)
         set_cell_background(hdr_cells[i], "EFEFEF")
-        
         p = hdr_cells[i].paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p.runs[0].font.bold = True
@@ -253,7 +239,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         new_row = table_res.add_row()
         prevent_row_split(new_row)
         row_cells = new_row.cells
-        
         for idx in range(7):
             row_cells[idx].width = res_widths[idx]
             row_cells[idx].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -269,106 +254,126 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         
         for col_idx in [1, 2, 3, 4]:
             row_cells[col_idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            
         for idx in range(7):
-            p = row_cells[idx].paragraphs[0]
-            p.runs[0].font.size = Pt(9)
-            p.runs[0].font.name = 'Arial'
+            row_cells[idx].paragraphs[0].runs[0].font.size = Pt(9)
+            row_cells[idx].paragraphs[0].runs[0].font.name = 'Arial'
             
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
-    # Bagian 4 Kolom Tanda Tangan Paralel
+    # Bagian Tanda Tangan (4 Kolom Paralel)
     table_sig = doc.add_table(rows=2, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
     prevent_row_split(table_sig.rows[0])
     prevent_row_split(table_sig.rows[1])
-    
     sig_widths = [Inches(1.69), Inches(1.69), Inches(1.69), Inches(1.70)]
     sig_titles = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
     
     for idx, title_text in enumerate(sig_titles):
-        cell_title = table_sig.rows[0].cells[idx]
-        cell_title.width = sig_widths[idx]
-        cell_title.text = title_text
-        p_t = cell_title.paragraphs[0]
+        table_sig.rows[0].cells[idx].width = sig_widths[idx]
+        table_sig.rows[0].cells[idx].text = title_text
+        p_t = table_sig.rows[0].cells[idx].paragraphs[0]
         p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p_t.runs[0].font.bold = True
         p_t.runs[0].font.size = Pt(9)
         p_t.runs[0].font.name = 'Arial'
         
-        cell_box = table_sig.rows[1].cells[idx]
-        cell_box.width = sig_widths[idx]
-        p_b = cell_box.paragraphs[0]
-        p_b.text = "\n\n\n\n__________________\nName:"
+        table_sig.rows[1].cells[idx].width = sig_widths[idx]
+        table_sig.rows[1].cells[idx].paragraphs[0].text = "\n\n\n\n__________________\nName:"
+        p_b = table_sig.rows[1].cells[idx].paragraphs[0]
         p_b.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p_b.runs[0].font.size = Pt(9)
         p_b.runs[0].font.name = 'Arial'
 
     # -----------------------------------------------------------------------------------
-    # 6. ATTACHMENT: PHOTOGRAPHIC DOCUMENTATION GENERATOR (HALAMAN BARU OTOMATIS)
+    # 6. ATTACHMENT: DOKUMENTASI FOTO PER-JOINT SECARA DINAMIS
     # -----------------------------------------------------------------------------------
-    if (img_penetrant_bytes is not None) or (img_developer_bytes is not None):
-        doc.add_page_break() # Paksa Pindah Ke Halaman Baru khusus Lampiran Foto
+    # Cek apakah ada minimal 1 foto yang diupload dari seluruh joint yang ada
+    has_any_photo = any(
+        (weld_id in dict_joint_photos) and 
+        (dict_joint_photos[weld_id]["red"] is not None or dict_joint_photos[weld_id]["dev"] is not None)
+        for weld_id in data_df["WELD NO"].astype(str).tolist()
+    )
+    
+    if has_any_photo:
+        doc.add_page_break() # Lompat ke halaman baru khusus Appendix Foto Lampiran
         
-        h_appendix = doc.add_paragraph()
-        h_appendix_run = h_appendix.add_run("APPENDIX: PHOTOGRAPHIC DOCUMENTATION")
-        h_appendix_run.bold = True
-        h_appendix_run.font.size = Pt(12)
-        h_appendix_run.font.name = 'Arial'
-        h_appendix.paragraph_format.space_before = Pt(12)
-        h_appendix.paragraph_format.space_after = Pt(18)
+        h_app = doc.add_paragraph()
+        h_app.add_run("APPENDIX: PHOTOGRAPHIC DOCUMENTATION PER-JOINT").bold = True
+        h_app.runs[-1].font.size = Pt(12)
+        h_app.runs[-1].font.name = 'Arial'
+        h_app.paragraph_format.space_after = Pt(14)
         
-        # Buat tabel grid tanpa border luar (Style: None) untuk mengunci posisi foto berdampingan
-        photo_table = doc.add_table(rows=2, cols=2)
-        photo_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-        photo_table.style = None
-        
-        # Atur lebar masing-masing kolom foto sebesar ~3.3 Inci agar simetris masuk area A4
-        for row in photo_table.rows:
-            prevent_row_split(row)
-            row.cells[0].width = Inches(3.35)
-            row.cells[1].width = Inches(3.35)
+        # Loop Baris Tabel Utama untuk memetakan foto ke Joint yang sesuai
+        for _, row in data_df.iterrows():
+            weld_no_str = str(row["WELD NO"])
+            part_name_str = str(row["PART NAME"])
             
-        # Kolom 1: Foto Red Apply (Penetrant)
-        if img_penetrant_bytes is not None:
-            cell_p1 = photo_table.cell(0, 0)
-            cell_p1.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            p_p1 = cell_p1.paragraphs[0]
-            p_p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p_p1.add_run().add_picture(img_penetrant_bytes, width=Inches(3.1))
+            # Lewati jika joint ini tidak memiliki data foto sama sekali
+            if weld_no_str not in dict_joint_photos:
+                continue
+                
+            photo_data = dict_joint_photos[weld_no_str]
+            if photo_data["red"] is None and photo_data["dev"] is None:
+                continue
+                
+            # Tambahkan Judul Sub-Joint Dokumentasi
+            p_jtitle = doc.add_paragraph()
+            p_jtitle.paragraph_format.space_before = Pt(8)
+            p_jtitle.paragraph_format.space_after = Pt(4)
+            run_jt = p_jtitle.add_run(f"■ Joint No: {weld_no_str} ({part_name_str})")
+            run_jt.bold = True
+            run_jt.font.size = Pt(10)
+            run_jt.font.name = 'Arial'
             
-            cell_c1 = photo_table.cell(1, 0)
-            p_c1 = cell_c1.paragraphs[0]
-            p_c1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p_c1.paragraph_format.space_before = Pt(6)
-            run_c1 = p_c1.add_run("Figure 1: Penetrant Application (Red Apply)")
-            run_c1.font.size = Pt(9.5)
-            run_c1.font.name = 'Arial'
-            run_c1.bold = True
-        else:
-            photo_table.cell(0, 0).paragraphs[0].text = "[ Foto Penetrant Tidak Diunggah ]"
-            photo_table.cell(0, 0).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-        # Kolom 2: Foto Developer Apply
-        if img_developer_bytes is not None:
-            cell_p2 = photo_table.cell(0, 1)
-            cell_p2.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            p_p2 = cell_p2.paragraphs[0]
-            p_p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p_p2.add_run().add_picture(img_developer_bytes, width=Inches(3.1))
+            # Buat Grid Box Foto 2-Kolom khusus untuk joint berjalan ini
+            photo_table = doc.add_table(rows=2, cols=2)
+            photo_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            photo_table.style = 'Table Grid'
+            prevent_row_split(photo_table.rows[0])
+            prevent_row_split(photo_table.rows[1])
             
-            cell_c2 = photo_table.cell(1, 1)
-            p_c2 = cell_c2.paragraphs[0]
-            p_c2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p_c2.paragraph_format.space_before = Pt(6)
-            run_c2 = p_c2.add_run("Figure 2: Developer Application")
-            run_c2.font.size = Pt(9.5)
-            run_c2.font.name = 'Arial'
-            run_c2.bold = True
-        else:
-            photo_table.cell(0, 1).paragraphs[0].text = "[ Foto Developer Tidak Diunggah ]"
-            photo_table.cell(0, 1).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            photo_table.rows[0].cells[0].width = Inches(3.38)
+            photo_table.rows[0].cells[1].width = Inches(3.39)
+            photo_table.rows[1].cells[0].width = Inches(3.38)
+            photo_table.rows[1].cells[1].width = Inches(3.39)
+            
+            # Slot Foto Kiri: Red Apply
+            cell_r_img = photo_table.cell(0, 0)
+            cell_r_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            if photo_data["red"] is not None:
+                cell_r_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                cell_r_img.paragraphs[0].add_run().add_picture(photo_data["red"], width=Inches(2.9))
+            else:
+                cell_r_img.paragraphs[0].text = "[ Foto Red Apply Tidak Tersedia ]"
+                cell_r_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                
+            cell_r_cap = photo_table.cell(1, 0)
+            set_cell_background(cell_r_cap, "F8F9FA")
+            cell_r_cap.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r_cap_run = cell_r_cap.paragraphs[0].add_run(f"Joint {weld_no_str}: Penetrant Application (Red Apply)")
+            r_cap_run.font.size = Pt(8.5)
+            r_cap_run.font.name = 'Arial'
+            
+            # Slot Foto Kanan: Developer Apply
+            cell_d_img = photo_table.cell(0, 1)
+            cell_d_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            if photo_data["dev"] is not None:
+                cell_d_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                cell_d_img.paragraphs[0].add_run().add_picture(photo_data["dev"], width=Inches(2.9))
+            else:
+                cell_d_img.paragraphs[0].text = "[ Foto Developer Tidak Tersedia ]"
+                cell_d_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                
+            cell_d_cap = photo_table.cell(1, 1)
+            set_cell_background(cell_d_cap, "F8F9FA")
+            cell_d_cap.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            d_cap_run = cell_d_cap.paragraphs[0].add_run(f"Joint {weld_no_str}: Developer Application")
+            d_cap_run.font.size = Pt(8.5)
+            d_cap_run.font.name = 'Arial'
+            
+            # Tambahkan spasi kecil antar box tabel joint
+            doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
     bio = io.BytesIO()
     doc.save(bio)
@@ -387,42 +392,20 @@ st.sidebar.info("Aplikasi Integrasi: LPI Generator & Volume Calculator.")
 
 if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
-    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant secara otomatis.")
+    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto per-joint sambungan.")
 
     st.sidebar.subheader("📐 Ukuran Logo Master (.docx)")
-    logo_size_setting = st.sidebar.slider("Lebar Semua Logo (Inchi)", min_value=1.0, max_value=2.0, value=1.4, step=0.05)
+    logo_size_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=1.0, max_value=2.0, value=1.4, step=0.05)
 
     # 1. BLOK UNGGAH LOGO PERUSAHAAN (KOP ATAS)
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
     log_col1, log_col2, log_col3 = st.columns(3)
-    
     with log_col1:
         up_logo_left = st.file_uploader("1. Logo Kiri (Main Contractor / Owner)", type=["png", "jpg", "jpeg"])
-        if up_logo_left: st.image(up_logo_left, width=130, caption="Preview Logo Kiri")
-        
     with log_col2:
         up_logo_rt = st.file_uploader("2. Logo Kanan Atas (Project Brand)", type=["png", "jpg", "jpeg"])
-        if up_logo_rt: st.image(up_logo_rt, width=130, caption="Preview Kanan Atas")
-        
     with log_col3:
         up_logo_rb = st.file_uploader("3. Logo Kanan Bawah (Sub-Consultant / QA)", type=["png", "jpg", "jpeg"])
-        if up_logo_rb: st.image(up_logo_rb, width=130, caption="Preview Kanan Bawah")
-
-    st.markdown("---")
-
-    # 2. BLOK BARU: UNGGAH FOTO ATTACHMENT REPORT (KONDISI LAPANGAN)
-    st.subheader("📸 Upload Foto Dokumentasi Lapangan (Attachment)")
-    photo_col1, photo_col2 = st.columns(2)
-    
-    with photo_col1:
-        up_photo_penetrant = st.file_uploader("Foto Proses: Penetrant Application (Red Apply)", type=["png", "jpg", "jpeg"], key="photo_red")
-        if up_photo_penetrant:
-            st.image(up_photo_penetrant, width=250, caption="Preview Foto Red Apply")
-            
-    with photo_col2:
-        up_photo_developer = st.file_uploader("Foto Proses: Developer Application", type=["png", "jpg", "jpeg"], key="photo_dev")
-        if up_photo_developer:
-            st.image(up_photo_developer, width=250, caption="Preview Foto Developer Apply")
 
     st.markdown("---")
 
@@ -434,38 +417,31 @@ if main_menu == "LIQUID PENETRANT REPORT":
 
     st.subheader("📝 Header & Document Control Information")
     col1, col2, col3 = st.columns(3)
-
     with col1:
         client = st.text_input("Client", value="PT. TRAKINDO UTAMA")
         project = st.text_input("Project", value="DAMAC DIGITAL JKT01 DAY 2")
         equipment = st.text_input("Equipment / System", value="FUEL PIPE") 
-
     with col2:
         st.text_input("Form No (Otomatis)", value=auto_form_no, disabled=True)
         st.text_input("Date (Otomatis)", value=date_str, disabled=True)
         drawing_no = st.text_input("Drawing No", value="ISO-JKT01-003") 
-
     with col3:
         doc_no_input = st.text_input("Doc No. (Kop)", value="DOC-DAMAC-LPI-002")
         rev_no_input = st.text_input("Rev. No (Kop)", value="0")
-        st.info("💡 Catatan: Nomor halaman sekarang aktif otomatis menggunakan field Native Word (Page X of Y).")
         standard = st.text_input("Standard", value="ASME B31.3")
         description = st.text_input("Description", value="TYPE 1")
 
     st.markdown("---")
     st.subheader("🔍 Inspection Parameters")
     col_p1, col_p2, col_p3 = st.columns(3)
-
     with col_p1:
         penetrant_method = st.radio("Penetrant Method", ["VISIBLE", "FLUORECENT"], index=0)
         removal_method = st.radio("Removal Method", ["SOLVENT REMOVABLE", "WATER WASHABLE", "POST EMULSIFIEBLE"], index=0)
-
     with col_p2:
         brand_name = st.text_input("Brand Name", value="MAGNAFLUX")
         penetrant_type = st.text_input("Penetrant Code", value="SPL-SP2")
         developer_type = st.text_input("Developer Code", value="SKD-S2")
         cleaner_type = st.text_input("Cleaner Code", value="SKC-S")
-
     with col_p3:
         surface_prep = st.radio("Surface Preparation", ["AS WELDED", "MACHINING", "GRINDING", "OTHER"], index=0)
         time_exam = st.radio("Time of Examination", ["AFTER WELDING", "AFTER HYDROTEST", "AFTER PWHT", "OTHER"], index=0)
@@ -487,32 +463,21 @@ if main_menu == "LIQUID PENETRANT REPORT":
 
     with st.expander("➕ Tambah Baris Hasil Las Baru"):
         c1_a, c1_b, c2, c3, c4 = st.columns([2, 2, 1.5, 1.5, 2])
+        with c1_a: part_1 = st.selectbox("Pilihan 1 (Base)", part_options_1)
+        with c1_b: part_2 = st.selectbox("Pilihan 2 (Joint)", part_options_2)
+        with c2: new_weld_no = st.text_input("Weld No", value="3")
+        with c3: new_thickness = st.number_input("Thickness (mm)", value=3.91, step=0.01)
+        with c4: new_result = st.selectbox("Result", ["ACC", "REJECT"])
         
-        with c1_a:
-            part_1 = st.selectbox("Pilihan 1 (Base)", part_options_1)
-        with c1_b:
-            part_2 = st.selectbox("Pilihan 2 (Joint)", part_options_2)
-            
-        with c2:
-            new_weld_no = st.text_input("Weld No", value="3")
-        with c3:
-            new_thickness = st.number_input("Thickness (mm)", value=3.91, step=0.01)
-        with c4:
-            new_result = st.selectbox("Result", ["ACC", "REJECT"])
-            
         new_discontinuity = "-"
+        new_remarks = "Repair Required" if new_result == "REJECT" else "-"
         if new_result == "REJECT":
             new_discontinuity = st.selectbox("Types of Discontinuities", discontinuity_options)
-            new_remarks = st.text_input("Remarks", value="Repair Required")
-        else:
-            new_remarks = "-"
 
         if st.button("Masukkan ke Tabel"):
             combined_part_name = f"{part_1} – {part_2}"
-            new_row = {
-                "PART NAME": combined_part_name, "WELD NO": new_weld_no, "THICKNESS (MM)": new_thickness,
-                "RESULT": new_result, "TYPES OF DISCONTINUITIES": new_discontinuity, "REMARKS": new_remarks
-            }
+            new_row = {"PART NAME": combined_part_name, "WELD NO": new_weld_no, "THICKNESS (MM)": new_thickness,
+                       "RESULT": new_result, "TYPES OF DISCONTINUITIES": new_discontinuity, "REMARKS": new_remarks}
             st.session_state.weld_data = pd.concat([st.session_state.weld_data, pd.DataFrame([new_row])], ignore_index=True)
             st.success(f"Data baru '{combined_part_name}' berhasil ditambahkan ke tabel!")
 
@@ -531,15 +496,38 @@ if main_menu == "LIQUID PENETRANT REPORT":
         }
     )
 
+    # -----------------------------------------------------------------------------------
+    # 3. KUNCI PERBAIKAN: INTERFACE UPLOAD FOTO PARALEL PER-JOINT SECARA DINAMIS
+    # -----------------------------------------------------------------------------------
+    st.markdown("---")
+    st.subheader("📸 Upload Dokumentasi Foto Lapangan Per-Joint")
+    st.write("Silakan buka expander di bawah ini untuk memasukkan foto spesifik pada masing-masing nomor joint:")
+    
+    # Kumpulan dictionary penampung byte data gambar per-joint sambungan
+    master_joint_photos = {}
+    current_weld_list = edited_weld_df["WELD NO"].astype(str).tolist()
+    
+    for idx, row in edited_weld_df.iterrows():
+        w_id = str(row["WELD NO"])
+        p_name = str(row["PART NAME"])
+        
+        with st.expander(f"Joint No: {w_id} ({p_name})"):
+            img_col1, img_col2 = st.columns(2)
+            with img_col1:
+                f_red = st.file_uploader(f"Foto Red Apply (Joint {w_id})", type=["png","jpg","jpeg"], key=f"red_{w_id}_{idx}")
+                f_red_bytes = io.BytesIO(f_red.getvalue()) if f_red else None
+            with img_col2:
+                f_dev = st.file_uploader(f"Foto Dev Apply (Joint {w_id})", type=["png","jpg","jpeg"], key=f"dev_{w_id}_{idx}")
+                f_dev_bytes = io.BytesIO(f_dev.getvalue()) if f_dev else None
+                
+            master_joint_photos[w_id] = {"red": f_red_bytes, "dev": f_dev_bytes}
+
     st.markdown("---")
     
-    # Memproses konversi file upload Streamlit ke format BytesIO stream
+    # Pengolahan Byte Kop Logo
     logo_l_io = io.BytesIO(up_logo_left.getvalue()) if up_logo_left else None
     logo_rt_io = io.BytesIO(up_logo_rt.getvalue()) if up_logo_rt else None
     logo_rb_io = io.BytesIO(up_logo_rb.getvalue()) if up_logo_rb else None
-    
-    photo_penetrant_io = io.BytesIO(up_photo_penetrant.getvalue()) if up_photo_penetrant else None
-    photo_developer_io = io.BytesIO(up_photo_developer.getvalue()) if up_photo_developer else None
 
     col_btn1, col_btn2 = st.columns([2, 8])
     with col_btn1:
@@ -555,7 +543,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
             brand_name=brand_name, penetrant_type=penetrant_type, developer_type=developer_type,
             cleaner_type=cleaner_type, surface_prep=surface_prep, time_exam=time_exam,
             scope_exam=scope_exam, data_df=edited_weld_df, logo_width_inch=logo_size_setting,
-            img_penetrant_bytes=photo_penetrant_io, img_developer_bytes=photo_developer_io
+            dict_joint_photos=master_joint_photos
         )
         
         st.download_button(
@@ -577,21 +565,12 @@ if main_menu == "LIQUID PENETRANT REPORT":
                         <td style="width:27%; text-align:center; padding:10px;"><b>[ LOGO KANAN ATAS ]</b><hr style="margin:5px 0;"><b>[ LOGO KANAN BAWAH ]</b></td>
                     </tr>
                 </table>
-                <table style="width:100%; margin-top:10px; border-top:2px solid #333; font-size:12px;">
-                    <tr>
-                        <td><b>Date:</b> {date_str}</td>
-                        <td><b>Doc No:</b> {doc_no_input if doc_no_input else '-'}</td>
-                        <td style="text-align:center;"><b>Rev:</b> {rev_no_input}</td>
-                        <td style="text-align:right; color:#0056b3;"><b>Page:</b> [Auto Dynamic Fields]</td>
-                    </tr>
-                </table>
             </div>
             """, 
             unsafe_allow_html=True
         )
         
         st.markdown("<br>", unsafe_allow_html=True)
-        
         header_summary = pd.DataFrame({
             "FIELD A": ["CLIENT", "PROJECT", "EQUIPMENT / SYSTEM", "DRAWING NO", "STANDARD / DESC"],
             "VALUE A": [client, project, equipment, drawing_no, f"{standard} / {description}"],
@@ -607,23 +586,13 @@ if main_menu == "LIQUID PENETRANT REPORT":
         display_df = display_df[["PART NAME", "WELD NO", "THICKNESS (MM)", "ACC", "REJECT", "TYPES OF DISCONTINUITIES", "REMARKS"]]
         st.dataframe(display_df, use_container_width=True)
         
-        st.write("#### Signatures")
-        sig_cols = st.columns(4)
-        sig_titles_preview = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
-        for i, title in enumerate(sig_titles_preview):
-            with sig_cols[i]:
-                st.write(f"**{title}**")
-                st.write("\n\n\n__________________")
-                st.write("Name:")
-                
-        # Preview Lampiran Foto di Browser jika ada berkas yang diunggah
-        if up_photo_penetrant or up_photo_developer:
-            st.markdown("---")
-            st.write("#### 📸 Attachment Preview: Photographic Documentation")
-            p_prev1, p_prev2 = st.columns(2)
-            with p_prev1:
-                if up_photo_penetrant: st.image(up_photo_penetrant, width=300, caption="Figure 1: Penetrant Application (Red Apply)")
-                else: st.info("Foto Red Apply belum dipilih.")
-            with p_prev2:
-                if up_photo_developer: st.image(up_photo_developer, width=300, caption="Figure 2: Developer Application")
-                else: st.info("Foto Developer Apply belum dipilih.")
+        # Ringkasan Pratonton Lampiran Foto Per-Joint di Web
+        st.write("#### 📸 Attachment Preview: Per-Joint Photos")
+        for key_w, media in master_joint_photos.items():
+            if media["red"] or media["dev"]:
+                st.write(f"**Joint Sambungan Las No: {key_w}**")
+                p_col1, p_col2 = st.columns(2)
+                with p_col1:
+                    if media["red"]: st.image(media["red"], width=200, caption=f"Red Apply Joint {key_w}")
+                with p_col2:
+                    if media["dev"]: st.image(media["dev"], width=200, caption=f"Dev Apply Joint {key_w}")

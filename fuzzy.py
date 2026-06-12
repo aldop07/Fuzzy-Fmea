@@ -255,7 +255,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
     # -----------------------------------------------------------------------------------
-    # SEKSI VERIFIKASI TANDA TANGAN 
+    # SEKSI VERIFIKASI TANDA TANGAN (1 Baris - Manual Tulis Tangan)
     # -----------------------------------------------------------------------------------
     table_sig = doc.add_table(rows=1, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -284,10 +284,10 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         r_b.font.size = Pt(9)
         r_b.font.name = 'Arial'
         
-    # PERBAIKAN PENTING: Dihapus `doc.add_paragraph()` di sini agar tidak tumpah dan membuat halaman blank!
+    doc.add_paragraph()
 
     # -----------------------------------------------------------------------------------
-    # AREA LAMPIRAN FOTO
+    # AREA LAMPIRAN FOTO (ANTI GEPENG)
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -513,69 +513,73 @@ if main_menu == "LIQUID PENETRANT REPORT":
     master_joint_photos = {}
     need_rerun = False
     
-    for idx, row in st.session_state.weld_data.iterrows():
-        w_id = str(row["WELD NO"])
-        p_name = str(row["PART NAME"])
-        current_res = str(row["RESULT"])
-        current_disc = str(row["TYPES OF DISCONTINUITIES"])
-        current_rem = str(row["REMARKS"])
-        
-        status_icon = "⏳ PENDING" if current_res == "PENDING" else f"✅ {current_res}" if current_res == "ACC" else f"❌ {current_res}"
-        
-        with st.expander(f"Joint No: {w_id} ({p_name}) - Status: {status_icon}"):
-            img_c1, img_c2 = st.columns(2)
-            with img_c1:
-                f_red = st.file_uploader(f"Foto Red Apply (Joint {w_id})", type=["png","jpg","jpeg"], key=f"red_{w_id}_{idx}")
-                f_red_bytes = io.BytesIO(f_red.getvalue()) if f_red else None
-            with img_c2:
-                f_dev = st.file_uploader(f"Foto Dev Apply (Joint {w_id})", type=["png","jpg","jpeg"], key=f"dev_{w_id}_{idx}")
-                f_dev_bytes = io.BytesIO(f_dev.getvalue()) if f_dev else None
-                
-            master_joint_photos[w_id] = {"red": f_red_bytes, "dev": f_dev_bytes}
+    # =========================================================================
+    # PERBAIKAN: MEMBUNGKUS AREA FOTO KE DALAM CONTAINER AGAR BISA DI SCROLL
+    # =========================================================================
+    with st.container(height=600):
+        for idx, row in st.session_state.weld_data.iterrows():
+            w_id = str(row["WELD NO"])
+            p_name = str(row["PART NAME"])
+            current_res = str(row["RESULT"])
+            current_disc = str(row["TYPES OF DISCONTINUITIES"])
+            current_rem = str(row["REMARKS"])
             
-            st.markdown("---")
-            if f_dev is not None:
-                st.success("✅ Foto Developer terdeteksi. Silakan putuskan ACC / REJECT di bawah ini.")
-                
-                eval_c1, eval_c2, eval_c3 = st.columns(3)
-                with eval_c1:
-                    idx_res = ["PENDING", "ACC", "REJECT"].index(current_res) if current_res in ["PENDING", "ACC", "REJECT"] else 0
-                    new_res = st.selectbox("Keputusan (Result)", ["PENDING", "ACC", "REJECT"], index=idx_res, key=f"res_{w_id}_{idx}")
-                
-                new_disc = current_disc
-                new_rem = current_rem
-                
-                if new_res == "REJECT":
-                    with eval_c2:
-                        idx_disc = discontinuity_options.index(current_disc) if current_disc in discontinuity_options else 0
-                        new_disc = st.selectbox("Jenis Cacat", discontinuity_options, index=idx_disc, key=f"disc_{w_id}_{idx}")
-                    with eval_c3:
-                        rem_val = current_rem if current_rem not in ["-", "Menunggu Hasil Dev Apply"] else "Repair"
-                        new_rem = st.text_input("Tindakan (Remarks)", value=rem_val, key=f"rem_{w_id}_{idx}")
-                elif new_res == "ACC":
-                    new_disc = "-"
-                    new_rem = "-"
-                elif new_res == "PENDING":
-                    new_disc = "-"
-                    new_rem = "-"
+            status_icon = "⏳ PENDING" if current_res == "PENDING" else f"✅ {current_res}" if current_res == "ACC" else f"❌ {current_res}"
+            
+            with st.expander(f"Joint No: {w_id} ({p_name}) - Status: {status_icon}"):
+                img_c1, img_c2 = st.columns(2)
+                with img_c1:
+                    f_red = st.file_uploader(f"Foto Red Apply (Joint {w_id})", type=["png","jpg","jpeg"], key=f"red_{w_id}_{idx}")
+                    f_red_bytes = io.BytesIO(f_red.getvalue()) if f_red else None
+                with img_c2:
+                    f_dev = st.file_uploader(f"Foto Dev Apply (Joint {w_id})", type=["png","jpg","jpeg"], key=f"dev_{w_id}_{idx}")
+                    f_dev_bytes = io.BytesIO(f_dev.getvalue()) if f_dev else None
                     
-                if new_res != current_res or new_disc != current_disc or new_rem != current_rem:
-                    st.session_state.weld_data.at[idx, "RESULT"] = new_res
-                    st.session_state.weld_data.at[idx, "TYPES OF DISCONTINUITIES"] = new_disc
-                    st.session_state.weld_data.at[idx, "REMARKS"] = new_rem
+                master_joint_photos[w_id] = {"red": f_red_bytes, "dev": f_dev_bytes}
+                
+                st.markdown("---")
+                if f_dev is not None:
+                    st.success("✅ Foto Developer terdeteksi. Silakan putuskan ACC / REJECT di bawah ini.")
                     
-                    if new_res == "ACC" and current_res != "ACC":
-                        need_rerun = True
-                    elif new_res == "PENDING" and current_res != "PENDING":
-                        need_rerun = True
+                    eval_c1, eval_c2, eval_c3 = st.columns(3)
+                    with eval_c1:
+                        idx_res = ["PENDING", "ACC", "REJECT"].index(current_res) if current_res in ["PENDING", "ACC", "REJECT"] else 0
+                        new_res = st.selectbox("Keputusan (Result)", ["PENDING", "ACC", "REJECT"], index=idx_res, key=f"res_{w_id}_{idx}")
+                    
+                    new_disc = current_disc
+                    new_rem = current_rem
+                    
+                    if new_res == "REJECT":
+                        with eval_c2:
+                            idx_disc = discontinuity_options.index(current_disc) if current_disc in discontinuity_options else 0
+                            new_disc = st.selectbox("Jenis Cacat", discontinuity_options, index=idx_disc, key=f"disc_{w_id}_{idx}")
+                        with eval_c3:
+                            rem_val = current_rem if current_rem not in ["-", "Menunggu Hasil Dev Apply"] else "Repair"
+                            new_rem = st.text_input("Tindakan (Remarks)", value=rem_val, key=f"rem_{w_id}_{idx}")
+                    elif new_res == "ACC":
+                        new_disc = "-"
+                        new_rem = "-"
+                    elif new_res == "PENDING":
+                        new_disc = "-"
+                        new_rem = "-"
+                        
+                    if new_res != current_res or new_disc != current_disc or new_rem != current_rem:
+                        st.session_state.weld_data.at[idx, "RESULT"] = new_res
+                        st.session_state.weld_data.at[idx, "TYPES OF DISCONTINUITIES"] = new_disc
+                        st.session_state.weld_data.at[idx, "REMARKS"] = new_rem
+                        
+                        if new_res == "ACC" and current_res != "ACC":
+                            need_rerun = True
+                        elif new_res == "PENDING" and current_res != "PENDING":
+                            need_rerun = True
 
-            else:
-                st.warning("⚠️ Silakan upload foto 'Dev Apply' terlebih dahulu untuk membuka kunci penilaian Result.")
-                if current_res != "PENDING":
-                    st.session_state.weld_data.at[idx, "RESULT"] = "PENDING"
-                    st.session_state.weld_data.at[idx, "TYPES OF DISCONTINUITIES"] = "-"
-                    st.session_state.weld_data.at[idx, "REMARKS"] = "-"
-                    need_rerun = True
+                else:
+                    st.warning("⚠️ Silakan upload foto 'Dev Apply' terlebih dahulu untuk membuka kunci penilaian Result.")
+                    if current_res != "PENDING":
+                        st.session_state.weld_data.at[idx, "RESULT"] = "PENDING"
+                        st.session_state.weld_data.at[idx, "TYPES OF DISCONTINUITIES"] = "-"
+                        st.session_state.weld_data.at[idx, "REMARKS"] = "-"
+                        need_rerun = True
 
     if need_rerun:
         st.rerun()

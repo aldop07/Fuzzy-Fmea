@@ -58,14 +58,14 @@ def add_xml_field(run, field_name):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # =======================================================================================
-# FUNGSI UTAMA GENERATE .DOCX (FIXED: HANYA MENGGUNAKAN WIDTH AGAR TIDAK GEPENG)
+# FUNGSI UTAMA GENERATE .DOCX
 # =======================================================================================
 def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
                          drawing_no, standard, description, penetrant_method, removal_method, 
                          brand_name, penetrant_type, developer_type, cleaner_type, 
-                         surface_prep, time_exam, scope_exam, data_df, 
-                         logo_width_inch, dict_joint_photos, photo_width_inch):
+                         surface_prep, time_exam, scope_exam, data_df, logo_width_inch, logo_height_inch,
+                         dict_joint_photos, photo_width_inch, sig_co1, sig_co2, sig_co3, sig_co4):
     
     doc = Document()
     
@@ -103,16 +103,12 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     cell_right_top = kop_table.cell(0, 2).merge(kop_table.cell(0, 3))     
     cell_right_bottom = kop_table.cell(1, 2).merge(kop_table.cell(1, 3))  
 
-    # =======================================================================
-    # FIX: Hapus parameter height agar Logo Kop otomatis proporsional
-    # =======================================================================
-    
     # Logo Kiri
     cell_left.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_left = cell_left.paragraphs[0]
     p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_left_bytes is not None:
-        p_left.add_run().add_picture(logo_left_bytes, width=Inches(logo_width_inch))
+        p_left.add_run().add_picture(logo_left_bytes, width=Inches(logo_width_inch), height=Inches(logo_height_inch))
     else:
         p_left.add_run("[ LOGO KIRI ]").font.color.rgb = RGBColor(160, 160, 160)
 
@@ -166,6 +162,11 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     meta_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
     meta_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+    # Bumper Spacer Header
+    header_bumper = header.add_paragraph()
+    header_bumper.paragraph_format.space_before = Pt(0)
+    header_bumper.paragraph_format.space_after = Pt(14) 
+
     # -----------------------------------------------------------------------------------
     # BODY CONTENT AREA
     # -----------------------------------------------------------------------------------
@@ -175,7 +176,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     h1_run.font.size = Pt(13)
     h1_run.font.name = 'Arial'
     h1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    h1.paragraph_format.space_before = Pt(6)
+    h1.paragraph_format.space_before = Pt(0)
     h1.paragraph_format.space_after = Pt(12)
 
     # Tabel Informasi Utama
@@ -272,7 +273,9 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
-    # Seksi Verifikasi Tanda Tangan
+    # -----------------------------------------------------------------------------------
+    # SEKSI VERIFIKASI TANDA TANGAN (INTEGRASI NAMA PERUSAHAAN DI SETIAP JABATAN)
+    # -----------------------------------------------------------------------------------
     table_sig = doc.add_table(rows=1, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
@@ -280,12 +283,14 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     
     sig_widths = [Inches(1.69), Inches(1.69), Inches(1.69), Inches(1.70)]
     sig_titles = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
+    sig_companies = [sig_co1, sig_co2, sig_co3, sig_co4] # Mapping variabel perusahaan
     
     for idx, title_text in enumerate(sig_titles):
         cell = table_sig.rows[0].cells[idx]
         cell.width = sig_widths[idx]
         set_cell_margins(cell, top=60, bottom=60, start=60, end=60)
         
+        # Paragraf 1: Judul Jabatan (Center)
         p_t = cell.paragraphs[0]
         p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER 
         p_t.paragraph_format.keep_with_next = True 
@@ -294,14 +299,26 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         r_t.font.size = Pt(9)
         r_t.font.name = 'Arial'
         
+        # PEMBARUAN: Paragraf Nama Perusahaan di bawah Jabatan (Center & Italic)
+        p_co = cell.add_paragraph()
+        p_co.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_co.paragraph_format.keep_with_next = True
+        r_co = p_co.add_run(str(sig_companies[idx]).upper())
+        r_co.font.size = Pt(8.5)
+        r_co.font.name = 'Arial'
+        r_co.italic = True
+        
+        # Paragraf Isian Nama & Tanggal Lapangan (Left)
         p_b = cell.add_paragraph()
         p_b.alignment = WD_ALIGN_PARAGRAPH.LEFT 
         r_b = p_b.add_run("\n\n\n\n_______________________\nName:\nDate:")
         r_b.font.size = Pt(9)
         r_b.font.name = 'Arial'
+        
+    doc.add_paragraph()
 
     # -----------------------------------------------------------------------------------
-    # AREA LAMPIRAN FOTO: OTOMATIS LOCK ASPECT RATIO 100% (NATIVE SIZE)
+    # AREA LAMPIRAN FOTO
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -316,6 +333,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         h_app.add_run("APPENDIX: PHOTOGRAPHIC DOCUMENTATION PER-JOINT").bold = True
         h_app.runs[-1].font.size = Pt(12)
         h_app.runs[-1].font.name = 'Arial'
+        h_app.paragraph_format.space_before = Pt(12)
         h_app.paragraph_format.space_after = Pt(14)
         
         for _, row in data_df.iterrows():
@@ -359,7 +377,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
             if photo_data["red"] is not None:
                 cell_r_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                # HANYA Menggunakan Width agar foto tidak Gepeng (Proporsional)
                 cell_r_img.paragraphs[0].add_run().add_picture(photo_data["red"], width=Inches(photo_width_inch))
                 cell_r_img.paragraphs[0].paragraph_format.keep_with_next = True
             else:
@@ -381,7 +398,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
             if photo_data["dev"] is not None:
                 cell_d_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                # HANYA Menggunakan Width agar foto tidak Gepeng (Proporsional)
                 cell_d_img.paragraphs[0].add_run().add_picture(photo_data["dev"], width=Inches(photo_width_inch))
                 cell_d_img.paragraphs[0].paragraph_format.keep_with_next = True
             else:
@@ -415,15 +431,13 @@ st.sidebar.info("Aplikasi Integrasi: LPI Generator & Volume Calculator.")
 
 if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
-    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant.")
+    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto seragam per-joint.")
 
     # SIDEBAR KONTROL SLIDER KOMPONEN
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
-    logo_w_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.4, step=0.05)
+    logo_w_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.2, value=1.4, step=0.05)
     photo_w_setting = st.sidebar.slider("Lebar Cetak Foto Lampiran (Inchi)", min_value=1.5, max_value=3.2, value=2.4, step=0.05)
-    st.sidebar.info("💡 Catatan: Tinggi logo dan foto lampiran sekarang di-lock otomatis 100% mengikuti bentuk asli gambar agar tidak gepeng.")
 
-    # 1. BLOK UNGGAH LOGO PERUSAHAAN (KOP ATAS)
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
     log_col1, log_col2, log_col3 = st.columns(3)
     with log_col1:
@@ -457,21 +471,18 @@ if main_menu == "LIQUID PENETRANT REPORT":
         standard = st.text_input("Standard", value="ASME B31.3")
         description = st.text_input("Description", value="TYPE 1")
 
+    # -----------------------------------------------------------------------------------
+    # PEMBARUAN INTERFACE: INPUT NAMA PERUSAHAAN KHUSUS UNTUK BLOK TANDA TANGAN
+    # -----------------------------------------------------------------------------------
     st.markdown("---")
-    st.subheader("🔍 Inspection Parameters")
-    col_p1, col_p2, col_p3 = st.columns(3)
-    with col_p1:
-        penetrant_method = st.radio("Penetrant Method", ["VISIBLE", "FLUORECENT"], index=0)
-        removal_method = st.radio("Removal Method", ["SOLVENT REMOVABLE", "WATER WASHABLE", "POST EMULSIFIEBLE"], index=0)
-    with col_p2:
-        brand_name = st.text_input("Brand Name", value="MAGNAFLUX")
-        penetrant_type = st.text_input("Penetrant Code", value="SPL-SP2")
-        developer_type = st.text_input("Developer Code", value="SKD-S2")
-        cleaner_type = st.text_input("Cleaner Code", value="SKC-S")
-    with col_p3:
-        surface_prep = st.radio("Surface Preparation", ["AS WELDED", "MACHINING", "GRINDING", "OTHER"], index=0)
-        time_exam = st.radio("Time of Examination", ["AFTER WELDING", "AFTER HYDROTEST", "AFTER PWHT", "OTHER"], index=0)
-        scope_exam = st.radio("Scope of Examination", ["BASE METAL", "WELD METAL", "BACK CHIPPING", "OTHER"], index=1)
+    st.subheader("🏢 Perusahaan Penandatangan (Signature Companies)")
+    col_co1, col_co2 = st.columns(2)
+    with col_co1:
+        sig_company_1 = st.text_input("Perusahaan (CHECKED / EXAMINED)", value="PT. MODANO ENERGI INDONESIA")
+        sig_company_2 = st.text_input("Perusahaan (REVIEWED)", value="PT. TRAKINDO UTAMA")
+    with col_co2:
+        sig_company_3 = st.text_input("Perusahaan (REVIEWED / WITNESSED - 1)", value="CUSHMAN & WAKEFIELD")
+        sig_company_4 = st.text_input("Perusahaan (REVIEWED / WITNESSED - 2)", value="DAMAC / PURE DC")
 
     st.markdown("---")
     st.subheader("📊 Weld Inspection Results Data")
@@ -522,13 +533,12 @@ if main_menu == "LIQUID PENETRANT REPORT":
         }
     )
 
-    # 2. INTERFACE UPLOAD FOTO PARALEL PER-JOINT SECARA DINAMIS
+    # Interface upload foto paralel per-joint
     st.markdown("---")
     st.subheader("📸 Upload Dokumentasi Foto Lapangan Per-Joint")
     st.write("Silakan buka expander di bawah ini untuk memasukkan foto spesifik pada masing-masing nomor joint:")
     
     master_joint_photos = {}
-    
     for idx, row in edited_weld_df.iterrows():
         w_id = str(row["WELD NO"])
         p_name = str(row["PART NAME"])
@@ -556,7 +566,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
         generate_layout = st.button("🚀 Generate Screen Layout")
         
     with col_btn2:
-        # PERBAIKAN: Hanya mengirim logo_width_inch dan photo_width_inch
+        # Pemanggilan fungsi dengan menyuntikkan nama perusahaan penguji
         docx_buffer = generate_docx_report(
             logo_left_bytes=logo_l_io, logo_right_top_bytes=logo_rt_io, logo_right_bottom_bytes=logo_rb_io,
             client=client, project=project, equipment=equipment, auto_form_no=auto_form_no, 
@@ -566,9 +576,9 @@ if main_menu == "LIQUID PENETRANT REPORT":
             brand_name=brand_name, penetrant_type=penetrant_type, developer_type=developer_type,
             cleaner_type=cleaner_type, surface_prep=surface_prep, time_exam=time_exam,
             scope_exam=scope_exam, data_df=edited_weld_df, 
-            logo_width_inch=logo_w_setting, 
-            dict_joint_photos=master_joint_photos,
-            photo_width_inch=photo_w_setting
+            logo_width_inch=logo_w_setting, logo_height_inch=logo_h_setting,
+            dict_joint_photos=master_joint_photos, photo_width_inch=photo_w_setting,
+            sig_co1=sig_company_1, sig_co2=sig_company_2, sig_co3=sig_company_3, sig_co4=sig_company_4
         )
         
         st.download_button(
@@ -614,9 +624,11 @@ if main_menu == "LIQUID PENETRANT REPORT":
         st.write("#### Signatures")
         sig_cols = st.columns(4)
         sig_titles_preview = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
+        sig_co_preview = [sig_company_1, sig_company_2, sig_company_3, sig_company_4]
         for i, title in enumerate(sig_titles_preview):
             with sig_cols[i]:
                 st.write(f"**<center>{title}</center>**", unsafe_allow_html=True)
+                st.write(f"<center><i><small>{sig_co_preview[i]}</small></i></center>", unsafe_allow_html=True)
                 st.write("\n\n\n__________________")
                 st.write("Name:")
                 st.write("Date:")

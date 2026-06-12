@@ -414,7 +414,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
     logo_w_setting = st.sidebar.slider("Lebar Logo Kop Surat (Inchi)", min_value=0.8, max_value=2.2, value=1.4, step=0.05)
     photo_w_setting = st.sidebar.slider("Lebar Cetak Foto Lampiran (Inchi)", min_value=1.5, max_value=3.2, value=2.4, step=0.05)
-    st.sidebar.info("💡 Catatan: Ukuran tinggi gambar logo dan foto lampiran otomatis terkunci mengikuti proporsi aslinya.")
+
 
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
     log_col1, log_col2, log_col3 = st.columns(3)

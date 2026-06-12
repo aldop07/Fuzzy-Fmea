@@ -15,7 +15,7 @@ from docx.oxml.ns import qn, nsdecls
 st.set_page_config(page_title="Engineering Tools & LPI Report", layout="wide")
 
 # =======================================================================================
-# FUNGSI ADVANCED XML UNTUK PAGE NUMBERING & TABEL OTOMATIS
+# FUNGSI PEMBANTU FORMATTING XML (UNTUK PAGINATION & LAYOUT TINGKAT LANJUT)
 # =======================================================================================
 def set_cell_margins(cell, top=100, bottom=100, start=100, end=100):
     """Mengatur padding di dalam cell tabel (dalam dxa)"""
@@ -63,14 +63,13 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc = Document()
     
     # Atur Margin Halaman Cetak Standar Internasional A4
-    # Top margin diperbesar (2.4 Inch) untuk memberikan ruang aman bagi Native Header Tabel
     sections = doc.sections
     for section in sections:
         section.top_margin = Inches(2.4)
         section.bottom_margin = Inches(0.75)
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.75)
-        section.header_distance = Inches(0.4) # Jarak header dari batas atas kertas
+        section.header_distance = Inches(0.4)
         section.page_width = Inches(8.27)
         section.page_height = Inches(11.69)
 
@@ -78,12 +77,11 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     # 1. INTEGRASI KOP SURAT KE NATIVE WORD HEADER (OTOMATIS REPEAT)
     # -----------------------------------------------------------------------------------
     header = doc.sections[0].header
-    # Bersihkan paragraf default kosong pada header bawaan
     for p in header.paragraphs:
         p.text = ""
         
-    # Buat 1 Kesatuan Grid Tabel Kop (3 Baris x 4 Kolom) agar layout terkunci sempurna
-    kop_table = header.add_table(rows=3, cols=4)
+    # PERBAIKAN DI SINI: Ditambahkan Inches(6.77) sebagai parameter lebar wajib di Header
+    kop_table = header.add_table(3, 4, Inches(6.77))
     kop_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     kop_table.style = 'Table Grid'
     
@@ -94,10 +92,10 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             row.cells[idx].width = width
 
     # Proses Merging Kolom Sesuai Blueprint Acuan Gambar
-    cell_left = kop_table.cell(0, 0).merge(kop_table.cell(1, 0))          # Slot Logo Kiri
-    cell_center = kop_table.cell(0, 1).merge(kop_table.cell(1, 1))        # Slot Judul Project
-    cell_right_top = kop_table.cell(0, 2).merge(kop_table.cell(0, 3))     # Slot Logo Kanan Atas
-    cell_right_bottom = kop_table.cell(1, 2).merge(kop_table.cell(1, 3))  # Slot Logo Kanan Bawah
+    cell_left = kop_table.cell(0, 0).merge(kop_table.cell(1, 0))          
+    cell_center = kop_table.cell(0, 1).merge(kop_table.cell(1, 1))        
+    cell_right_top = kop_table.cell(0, 2).merge(kop_table.cell(0, 3))     
+    cell_right_bottom = kop_table.cell(1, 2).merge(kop_table.cell(1, 3))  
 
     # Mengisi Konten Logo Kiri
     cell_left.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -152,7 +150,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     p_page.add_run(" of ")
     add_xml_field(p_page.add_run(), "NUMPAGES")
     
-    # Format Tulisan Baris Metadata Dokumen Kontrol
     for cell in meta_cells:
         p = cell.paragraphs[0]
         p.runs[0].font.size = Pt(9.5)
@@ -161,9 +158,8 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     meta_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     # -----------------------------------------------------------------------------------
-    # BODY CONTENT AREA (Mulai mengalir di bawah batas area top margin)
+    # BODY CONTENT AREA
     # -----------------------------------------------------------------------------------
-    # Judul Dokumen Form Utama
     h1 = doc.add_paragraph()
     h1_run = h1.add_run("FINAL LIQUID PENETRANT INSPECTION REPORT")
     h1_run.bold = True
@@ -172,7 +168,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     h1.alignment = WD_ALIGN_PARAGRAPH.CENTER
     h1.paragraph_format.space_after = Pt(12)
 
-    # 2. TABEL INFORMASI HEADER UMUM
+    # Tabel Informasi Umum
     table_header = doc.add_table(rows=5, cols=4)
     table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.style = 'Table Grid'
@@ -202,7 +198,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
                 p.runs[0].font.bold = True
                 set_cell_background(row_cells[col_idx], "F8F9FA")
 
-    # 3. INSPECTION PARAMETERS SUMMARY TEXT
+    # Parameter Pengujian
     p_param = doc.add_paragraph()
     p_param.paragraph_format.space_before = Pt(10)
     p_param.paragraph_format.space_after = Pt(12)
@@ -221,7 +217,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         r_val.font.size = Pt(9.5)
         r_val.font.name = 'Arial'
 
-    # Sub-heading tabel hasil pengujian
     h2 = doc.add_paragraph()
     h2_run = h2.add_run("Inspection Results Table")
     h2_run.bold = True
@@ -229,9 +224,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     h2_run.font.name = 'Arial'
     h2.paragraph_format.space_after = Pt(6)
     
-    # -----------------------------------------------------------------------------------
-    # 4. TABEL HASIL INDIKASI PENGUJIAN (AUTO-REPEAT JUDUL KOLOM TABEL DI HALAMAN BARU)
-    # -----------------------------------------------------------------------------------
+    # Tabel Hasil Utama (Auto Repeat Header)
     table_res = doc.add_table(rows=1, cols=7)
     table_res.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_res.style = 'Table Grid'
@@ -239,7 +232,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     res_widths = [Inches(1.8), Inches(0.7), Inches(1.1), Inches(0.5), Inches(0.6), Inches(1.2), Inches(0.87)]
     
     hdr_cells = table_res.rows[0].cells
-    set_repeat_header(table_res.rows[0]) # <--- Judul kolom terulang otomatis di hal. 2, 3, dst
+    set_repeat_header(table_res.rows[0]) 
     prevent_row_split(table_res.rows[0])
     
     headers_col = ["PART NAME", "WELD NO", "THICKNESS (MM)", "ACC", "REJECT", "TYPES OF DISCONTINUITIES", "REMARKS"]
@@ -284,9 +277,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
-    # -----------------------------------------------------------------------------------
-    # 5. HALAMAN AKHIR: BAGIAN TANDA TANGAN (4 KOLOM PARALEL SEJAJAR)
-    # -----------------------------------------------------------------------------------
+    # Bagian 4 Kolom Tanda Tangan Paralel
     table_sig = doc.add_table(rows=2, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
@@ -333,7 +324,6 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
     st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant secara otomatis.")
 
-    # MULTI COMPONENT LOGO UPLOADER
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
     log_col1, log_col2, log_col3 = st.columns(3)
     
@@ -489,9 +479,6 @@ if main_menu == "LIQUID PENETRANT REPORT":
         st.markdown("## 📄 PREVIEW REPORT LAYOUT (PAGE HEADER MODEL)")
         st.markdown(
             f"""
-            <div style="border:2px solid #0056b3; padding:12px; border-radius:5px; background-color:#F0F4F8; font-size:11px; margin-bottom:10px;">
-                📢 <b>Sistem Integrasi Header Terdeteksi:</b> Kotak di bawah ini akan bertindak sebagai Header Atas Otomatis pada Microsoft Word.
-            </div>
             <div style="border:2px solid #333; padding:15px; border-radius:5px; background-color:#FAFAFA">
                 <table style="width:100%; border-collapse:collapse; border:none;">
                     <tr>
@@ -532,7 +519,8 @@ if main_menu == "LIQUID PENETRANT REPORT":
         
         st.write("#### Signatures")
         sig_cols = st.columns(4)
-        for i, title in enumerate(sig_titles):
+        sig_titles_preview = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
+        for i, title in enumerate(sig_titles_preview):
             with sig_cols[i]:
                 st.write(f"**{title}**")
                 st.write("\n\n\n__________________")

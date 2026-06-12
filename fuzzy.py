@@ -472,6 +472,13 @@ if main_menu == "LIQUID PENETRANT REPORT":
     part_options_2 = ["FLANGE", "ELBOW", "EQUAL TEE", "PIPE", "VALVE"]
     discontinuity_options = ["Crack", "Porosity", "Slag Inclusion", "Incomplete Fusion", "Incomplete Penetration", "Undercut", "Linear Indication", "Rounded Indication"]
 
+    if 'weld_data' not in st.session_state:
+        st.session_state.weld_data = pd.DataFrame([
+            {"PART NAME": "PIPE – FLANGE", "WELD NO": "1", "THICKNESS (MM)": 3.91, "RESULT": "ACC", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"},
+            {"PART NAME": "PIPE – ELBOW", "WELD NO": "2", "THICKNESS (MM)": 3.91, "RESULT": "ACC", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"},
+            {"PART NAME": "PIPE – EQUAL TEE", "WELD NO": "6", "THICKNESS (MM)": 3.91, "RESULT": "ACC", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"}
+        ])
+
     with st.expander("➕ Tambah Baris Hasil Las Baru"):
         c1_a, c1_b, c2, c3, c4 = st.columns([2, 2, 1.5, 1.5, 2])
         with c1_a: part_1 = st.selectbox("Pilihan 1 (Base)", part_options_1)
@@ -488,7 +495,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
             with col_rej1:
                 new_discontinuity = st.selectbox("Types of Discontinuities", discontinuity_options)
             with col_rej2:
-                new_remarks = st.text_input("Remarks (Tindakan)", value="Repair Required")
+                new_remarks = st.text_input("Remarks (Tindakan)", value="Repair")
 
         if st.button("Masukkan ke Tabel"):
             combined_part_name = f"{part_1} – {part_2}"

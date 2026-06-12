@@ -58,14 +58,14 @@ def add_xml_field(run, field_name):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # =======================================================================================
-# FUNGSI UTAMA GENERATE .DOCX DENGAN UKURAN LOGO & ATTACHMENT STANDAR UNIFORM
+# FUNGSI UTAMA GENERATE .DOCX DENGAN AUTO-SCALE ASPECT RATIO (ANTI GEPENG)
 # =======================================================================================
 def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
                          drawing_no, standard, description, penetrant_method, removal_method, 
                          brand_name, penetrant_type, developer_type, cleaner_type, 
                          surface_prep, time_exam, scope_exam, data_df, logo_width_inch, logo_height_inch,
-                         dict_joint_photos, photo_width_inch, photo_height_inch):
+                         dict_joint_photos, photo_width_inch):
     
     doc = Document()
     
@@ -267,7 +267,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
-    # Seksi Verifikasi Tanda Tangan
+    # Seksi Verifikasi Tanda Tangan (Title Center, Isian Left dengan Kolom Tanggal)
     table_sig = doc.add_table(rows=2, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
@@ -296,7 +296,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         p_b.runs[0].font.name = 'Arial'
 
     # -----------------------------------------------------------------------------------
-    # AREA LAMPIRAN FOTO: DENGAN UKURAN STANDAR, UNIFORM, & KUNCI HALAMAN (KEEP WITH NEXT)
+    # AREA LAMPIRAN FOTO: DENGAN UKURAN LEBAR SERAGAM & ASPEK RASIO TERKUNCI (ANTI GEPENG)
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -347,15 +347,15 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             photo_table.rows[1].cells[0].width = Inches(3.38)
             photo_table.rows[1].cells[1].width = Inches(3.39)
             
-            # Slot Foto Kiri: Red Apply (Ukuran Terkontrol Standar)
+            # Slot Foto Kiri: Red Apply
             cell_r_img = photo_table.cell(0, 0)
             cell_r_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(cell_r_img, top=180, bottom=180, start=180, end=180)
             
             if photo_data["red"] is not None:
                 cell_r_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                # PERBAIKAN: Mengunci dimensi gambar lampiran agar seragam sesuai input setting
-                cell_r_img.paragraphs[0].add_run().add_picture(photo_data["red"], width=Inches(photo_width_inch), height=Inches(photo_height_inch))
+                # PERBAIKAN: Hanya mendefinisikan width. Height otomatis auto-scale (Anti Gepeng)
+                cell_r_img.paragraphs[0].add_run().add_picture(photo_data["red"], width=Inches(photo_width_inch))
                 cell_r_img.paragraphs[0].paragraph_format.keep_with_next = True
             else:
                 cell_r_img.paragraphs[0].text = "[ Foto Red Apply Tidak Tersedia ]"
@@ -369,15 +369,15 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             r_cap_run.font.size = Pt(8.5)
             r_cap_run.font.name = 'Arial'
             
-            # Slot Foto Kanan: Developer Apply (Ukuran Terkontrol Standar)
+            # Slot Foto Kanan: Developer Apply
             cell_d_img = photo_table.cell(0, 1)
             cell_d_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(cell_d_img, top=180, bottom=180, start=180, end=180)
             
             if photo_data["dev"] is not None:
                 cell_d_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                # PERBAIKAN: Mengunci dimensi gambar lampiran agar seragam sesuai input setting
-                cell_d_img.paragraphs[0].add_run().add_picture(photo_data["dev"], width=Inches(photo_width_inch), height=Inches(photo_height_inch))
+                # PERBAIKAN: Hanya mendefinisikan width. Height otomatis auto-scale (Anti Gepeng)
+                cell_d_img.paragraphs[0].add_run().add_picture(photo_data["dev"], width=Inches(photo_width_inch))
                 cell_d_img.paragraphs[0].paragraph_format.keep_with_next = True
             else:
                 cell_d_img.paragraphs[0].text = "[ Foto Developer Tidak Tersedia ]"
@@ -410,16 +410,15 @@ st.sidebar.info("Aplikasi Integrasi: LPI Generator & Volume Calculator.")
 
 if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
-    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto uniform per-joint.")
+    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto seragam per-joint.")
 
     # SIDEBAR KONTROL SLIDER KOMPONEN (KOP LOGO & ATTACHMENT FOTO)
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
     logo_w_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
     logo_h_setting = st.sidebar.slider("Tinggi Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
     
-    # PERBAIKAN: Menyediakan Slider Khusus Dimensi Standar Uniform Foto Lampiran (Default Lebar: 2.5", Tinggi: 2.0")
-    photo_w_setting = st.sidebar.slider("Lebar Foto Lampiran / Attachment (Inchi)", min_value=1.5, max_value=3.2, value=2.5, step=0.05)
-    photo_h_setting = st.sidebar.slider("Tinggi Foto Lampiran / Attachment (Inchi)", min_value=1.2, max_value=3.2, value=2.0, step=0.05)
+    # PERBAIKAN: Menghapus slider Tinggi Foto karena Tinggi akan menyesuaikan otomatis secara proporsional
+    photo_w_setting = st.sidebar.slider("Lebar Cetak Foto Lampiran / Attachment (Inchi)", min_value=1.5, max_value=3.2, value=2.4, step=0.05)
 
     # 1. BLOK UNGGAH LOGO PERUSAHAAN (KOP ATAS)
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
@@ -565,7 +564,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
             scope_exam=scope_exam, data_df=edited_weld_df, 
             logo_width_inch=logo_w_setting, logo_height_inch=logo_h_setting,
             dict_joint_photos=master_joint_photos,
-            photo_width_inch=photo_w_setting, photo_height_inch=photo_h_setting
+            photo_width_inch=photo_w_setting
         )
         
         st.download_button(

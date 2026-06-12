@@ -65,7 +65,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     
     sections = doc.sections
     for section in sections:
-        section.top_margin = Inches(1.5)
+        section.top_margin = Inches(2.1)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.75)
@@ -255,7 +255,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
     # -----------------------------------------------------------------------------------
-    # SEKSI VERIFIKASI TANDA TANGAN
+    # SEKSI VERIFIKASI TANDA TANGAN 
     # -----------------------------------------------------------------------------------
     table_sig = doc.add_table(rows=1, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -284,7 +284,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         r_b.font.size = Pt(9)
         r_b.font.name = 'Arial'
         
-    doc.add_paragraph()
+    # PERBAIKAN PENTING: Dihapus `doc.add_paragraph()` di sini agar tidak tumpah dan membuat halaman blank!
 
     # -----------------------------------------------------------------------------------
     # AREA LAMPIRAN FOTO
@@ -339,6 +339,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             photo_table.rows[1].cells[0].width = Inches(3.38)
             photo_table.rows[1].cells[1].width = Inches(3.39)
             
+            # Slot Foto Kiri: Red Apply
             cell_r_img = photo_table.cell(0, 0)
             cell_r_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(cell_r_img, top=180, bottom=180, start=180, end=180)
@@ -359,6 +360,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             r_cap_run.font.size = Pt(8.5)
             r_cap_run.font.name = 'Arial'
             
+            # Slot Foto Kanan: Developer Apply
             cell_d_img = photo_table.cell(0, 1)
             cell_d_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(cell_d_img, top=180, bottom=180, start=180, end=180)
@@ -400,6 +402,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
     st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant.")
 
+    # SIDEBAR KONTROL SLIDER KOMPONEN
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
     logo_w_setting = st.sidebar.slider("Lebar Logo Kop Surat (Inchi)", min_value=0.8, max_value=2.2, value=1.4, step=0.05)
     photo_w_setting = st.sidebar.slider("Lebar Cetak Foto Lampiran (Inchi)", min_value=1.5, max_value=3.2, value=2.4, step=0.05)
@@ -556,16 +559,11 @@ if main_menu == "LIQUID PENETRANT REPORT":
                     new_disc = "-"
                     new_rem = "-"
                     
-                # Sinkronkan kembali ke jadual utama
                 if new_res != current_res or new_disc != current_disc or new_rem != current_rem:
                     st.session_state.weld_data.at[idx, "RESULT"] = new_res
                     st.session_state.weld_data.at[idx, "TYPES OF DISCONTINUITIES"] = new_disc
                     st.session_state.weld_data.at[idx, "REMARKS"] = new_rem
                     
-                    # LOGIKA PENTING KONTROL KOTAK (EXPANDER BEHAVIOR)
-                    # Jika klik ACC -> Langsung Rerun (Kotak Menutup)
-                    # Jika klik PENDING -> Langsung Rerun (Kotak Menutup)
-                    # Jika klik REJECT -> JANGAN RERUN! (Kotak Stanby, bebas isi data)
                     if new_res == "ACC" and current_res != "ACC":
                         need_rerun = True
                     elif new_res == "PENDING" and current_res != "PENDING":

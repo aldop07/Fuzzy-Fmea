@@ -81,6 +81,10 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.markdown("---")
     st.subheader("Weld Inspection Results Data")
 
+    # Opsi komponen untuk digabungkan menjadi Part Name
+    part_options_1 = ["PIPE", "PLATE", "ELBOW", "TEE", "FLANGE"]
+    part_options_2 = ["FLANGE", "ELBOW", "EQUAL TEE", "PIPE", "VALVE"]
+
     # Daftar diskontinuitas standar untuk lasan
     discontinuity_options = ["Crack", "Porosity", "Slag Inclusion", "Incomplete Fusion", "Incomplete Penetration", "Undercut", "Linear Indication", "Rounded Indication"]
 
@@ -93,9 +97,14 @@ if main_menu == "LIQUID PENETRANT REPORT":
         ])
 
     with st.expander("➕ Tambah Baris Hasil Las Baru"):
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            new_part = st.selectbox("Part Name", ["PIPE – FLANGE", "PIPE – ELBOW", "PIPE – EQUAL TEE"])
+        # Membuat kolom layout; membagi area Part Name menjadi dua sub-kolom kecil
+        c1_a, c1_b, c2, c3, c4 = st.columns([2, 2, 1.5, 1.5, 2])
+        
+        with c1_a:
+            part_1 = st.selectbox("Pilihan 1 (Base)", part_options_1)
+        with c1_b:
+            part_2 = st.selectbox("Pilihan 2 (Joint)", part_options_2)
+            
         with c2:
             new_weld_no = st.text_input("Weld No", value="3")
         with c3:
@@ -112,19 +121,33 @@ if main_menu == "LIQUID PENETRANT REPORT":
             new_remarks = "-"
 
         if st.button("Masukkan ke Tabel"):
+            # Menggabungkan Pilihan 1 dan Pilihan 2 menjadi satu format standar
+            combined_part_name = f"{part_1} – {part_2}"
+            
             new_row = {
-                "PART NAME": new_part, "WELD NO": new_weld_no, "THICKNESS (MM)": new_thickness,
+                "PART NAME": combined_part_name, "WELD NO": new_weld_no, "THICKNESS (MM)": new_thickness,
                 "RESULT": new_result, "TYPES OF DISCONTINUITIES": new_discontinuity, "REMARKS": new_remarks
             }
             st.session_state.weld_data = pd.concat([st.session_state.weld_data, pd.DataFrame([new_row])], ignore_index=True)
-            st.success("Data baru berhasil ditambahkan ke tabel!")
+            st.success(f"Data baru '{combined_part_name}' berhasil ditambahkan ke tabel!")
 
-    # Menggunakan st.data_editor dengan column_config agar user bisa memilih drop down di dalam tabel langsung
+    # Menghasilkan semua kemungkinan kombinasi part name untuk dropdown di data_editor
+    all_combined_options = [f"{p1} – {p2}" for p1 in part_options_1 for p2 in part_options_2]
+    # Gabungkan dengan nilai unik yang sudah ada di dataframe agar tidak terjadi error relasi data
+    existing_parts = st.session_state.weld_data["PART NAME"].unique().tolist()
+    final_part_config_options = list(set(all_combined_options + existing_parts))
+
+    # Menggunakan st.data_editor dengan column_config
     edited_weld_df = st.data_editor(
         st.session_state.weld_data, 
         num_rows="dynamic", 
         use_container_width=True,
         column_config={
+            "PART NAME": st.column_config.SelectboxColumn(
+                "PART NAME",
+                options=final_part_config_options,
+                required=True
+            ),
             "RESULT": st.column_config.SelectboxColumn(
                 "RESULT",
                 options=["ACC", "REJECT"],

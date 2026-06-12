@@ -69,7 +69,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     
     doc = Document()
     
-    # Atur Margin Halaman Cetak Standar Internasional A4
     sections = doc.sections
     for section in sections:
         section.top_margin = Inches(2.1)
@@ -80,9 +79,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         section.page_width = Inches(8.27)
         section.page_height = Inches(11.69)
 
-    # -----------------------------------------------------------------------------------
-    # 1. INTEGRASI KOP SURAT KE NATIVE WORD HEADER
-    # -----------------------------------------------------------------------------------
     header = doc.sections[0].header
     for p in header.paragraphs:
         p.text = ""
@@ -250,10 +246,9 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         row_cells[1].text = str(row["WELD NO"])
         row_cells[2].text = f"{row['THICKNESS (MM)']:.2f}" if isinstance(row['THICKNESS (MM)'], (int, float)) else str(row['THICKNESS (MM)'])
         
-        # PERBAIKAN: Menangani PENDING dengan membiarkan kolom ACC dan REJECT kosong
+        # PENDING akan menghasilkan kotak kosong pada Word (Tiada tik di ACC atau REJECT)
         row_cells[3].text = "☑" if row["RESULT"] == "ACC" else "☐"
         row_cells[4].text = "☑" if row["RESULT"] == "REJECT" else "☐"
-        
         row_cells[5].text = str(row["TYPES OF DISCONTINUITIES"])
         row_cells[6].text = str(row["REMARKS"])
         
@@ -267,7 +262,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
     # -----------------------------------------------------------------------------------
-    # SEKSI VERIFIKASI TANDA TANGAN (Tulis Tangan Manual)
+    # SEKSI VERIFIKASI TANDA TANGAN (1 Baris - Manual Tulis Tangan)
     # -----------------------------------------------------------------------------------
     table_sig = doc.add_table(rows=1, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -418,7 +413,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
     logo_w_setting = st.sidebar.slider("Lebar Logo Kop Surat (Inchi)", min_value=0.8, max_value=2.2, value=1.4, step=0.05)
     photo_w_setting = st.sidebar.slider("Lebar Cetak Foto Lampiran (Inchi)", min_value=1.5, max_value=3.2, value=2.4, step=0.05)
-    st.sidebar.info("💡 Catatan: Tinggi logo dan foto otomatis disesuaikan 100% mengikuti bentuk asli gambar agar tidak gepeng.")
+    st.sidebar.info("💡 Catatan: Ukuran tinggi gambar logo dan foto lampiran otomatis terkunci 100% mengikuti proporsi aslinya (Anti-Gepeng).")
 
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
     log_col1, log_col2, log_col3 = st.columns(3)
@@ -471,84 +466,131 @@ if main_menu == "LIQUID PENETRANT REPORT":
 
     st.markdown("---")
     st.subheader("📊 Weld Inspection Results Data")
-    
-    st.info("💡 **TIPS ALUR KERJA:** Anda dapat menambahkan baris dengan status **PENDING** terlebih dahulu. Setelah mengupload dan melihat hasil foto Red/Dev Apply di bagian bawah layar, Anda dapat **mengklik ganda (double-click)** sel tabel di bawah ini untuk mengubah statusnya menjadi **ACC** atau **REJECT** secara langsung.")
 
     part_options_1 = ["PIPE", "PLATE", "ELBOW", "TEE", "FLANGE"]
     part_options_2 = ["FLANGE", "ELBOW", "EQUAL TEE", "PIPE", "VALVE"]
     discontinuity_options = ["Crack", "Porosity", "Slag Inclusion", "Incomplete Fusion", "Incomplete Penetration", "Undercut", "Linear Indication", "Rounded Indication"]
 
+    # Inisialisasi awal dengan status PENDING
     if 'weld_data' not in st.session_state:
         st.session_state.weld_data = pd.DataFrame([
-            {"PART NAME": "PIPE – FLANGE", "WELD NO": "1", "THICKNESS (MM)": 3.91, "RESULT": "ACC", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"},
-            {"PART NAME": "PIPE – ELBOW", "WELD NO": "2", "THICKNESS (MM)": 3.91, "RESULT": "ACC", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"},
-            {"PART NAME": "PIPE – EQUAL TEE", "WELD NO": "6", "THICKNESS (MM)": 3.91, "RESULT": "ACC", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"}
+            {"PART NAME": "PIPE – FLANGE", "WELD NO": "1", "THICKNESS (MM)": 3.91, "RESULT": "PENDING", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"},
+            {"PART NAME": "PIPE – ELBOW", "WELD NO": "2", "THICKNESS (MM)": 3.91, "RESULT": "PENDING", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"},
+            {"PART NAME": "PIPE – EQUAL TEE", "WELD NO": "6", "THICKNESS (MM)": 3.91, "RESULT": "PENDING", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"}
         ])
 
+    # -------------------------------------------------------------------------
+    # KUNCI 1: HAPUS PILIHAN HASIL SEMASA MENAMBAH BARIS BARU
+    # -------------------------------------------------------------------------
     with st.expander("➕ Tambah Baris Hasil Las Baru"):
-        c1_a, c1_b, c2, c3, c4 = st.columns([2, 2, 1.5, 1.5, 2])
+        c1_a, c1_b, c2, c3 = st.columns([2, 2, 1.5, 1.5])
         with c1_a: part_1 = st.selectbox("Pilihan 1 (Base)", part_options_1)
         with c1_b: part_2 = st.selectbox("Pilihan 2 (Joint)", part_options_2)
         with c2: new_weld_no = st.text_input("Weld No", value="3")
         with c3: new_thickness = st.number_input("Thickness (mm)", value=3.91, step=0.01)
-        # PERBAIKAN: Menambahkan status PENDING di opsi penambahan baris
-        with c4: new_result = st.selectbox("Result", ["PENDING", "ACC", "REJECT"], index=0)
-        
-        new_discontinuity = "-"
-        if new_result == "REJECT":
-            col_rej1, col_rej2 = st.columns(2)
-            with col_rej1:
-                new_discontinuity = st.selectbox("Types of Discontinuities", discontinuity_options)
-            with col_rej2:
-                new_remarks = st.text_input("Remarks (Tindakan)", value="Repair")
-        elif new_result == "PENDING":
-            new_remarks = "Menunggu Hasil Dev Apply"
-        else:
-            new_remarks = "-"
+
+        st.info("Status penilaian (Result) akan diletakkan sebagai **PENDING** secara automatik sehingga anda memuat naik foto.")
 
         if st.button("Masukkan ke Tabel"):
             combined_part_name = f"{part_1} – {part_2}"
             new_row = {"PART NAME": combined_part_name, "WELD NO": new_weld_no, "THICKNESS (MM)": new_thickness,
-                       "RESULT": new_result, "TYPES OF DISCONTINUITIES": new_discontinuity, "REMARKS": new_remarks}
+                       "RESULT": "PENDING", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"}
             st.session_state.weld_data = pd.concat([st.session_state.weld_data, pd.DataFrame([new_row])], ignore_index=True)
-            st.success(f"Data '{combined_part_name}' ditambahkan. Silakan upload fotonya di bawah.")
+            st.success(f"Data '{combined_part_name}' ditambahkan. Sila muat naik fotonya di bawah.")
 
     all_combined_options = [f"{p1} – {p2}" for p1 in part_options_1 for p2 in part_options_2]
     existing_parts = st.session_state.weld_data["PART NAME"].unique().tolist()
     final_part_config_options = list(set(all_combined_options + existing_parts))
 
+    # -------------------------------------------------------------------------
+    # KUNCI 2: JADUAL UTAMA DIKUNCI DARIPADA SUNTINGAN HASIL (RESULT)
+    # -------------------------------------------------------------------------
     edited_weld_df = st.data_editor(
         st.session_state.weld_data, 
         num_rows="dynamic", 
         use_container_width=True,
         column_config={
             "PART NAME": st.column_config.SelectboxColumn("PART NAME", options=final_part_config_options, required=True),
-            "RESULT": st.column_config.SelectboxColumn("RESULT", options=["PENDING", "ACC", "REJECT"], required=True),
-            "TYPES OF DISCONTINUITIES": st.column_config.SelectboxColumn("TYPES OF DISCONTINUITIES", options=["-"] + discontinuity_options, required=True),
-            "REMARKS": st.column_config.TextColumn("REMARKS")
+            "RESULT": st.column_config.Column("RESULT (Dikunci)", disabled=True),
+            "TYPES OF DISCONTINUITIES": st.column_config.Column("DISCONTINUITIES (Dikunci)", disabled=True),
+            "REMARKS": st.column_config.Column("REMARKS (Dikunci)", disabled=True)
         }
     )
+    st.session_state.weld_data = edited_weld_df.copy()
 
-    # 2. INTERFACE UPLOAD FOTO PARALEL PER-JOINT SECARA DINAMIS
+    # -------------------------------------------------------------------------
+    # KUNCI 3: PENILAIAN HASIL HANYA BERLAKU DI DALAM KOTAK FOTO
+    # -------------------------------------------------------------------------
     st.markdown("---")
-    st.subheader("📸 Upload Dokumentasi Foto Lapangan Per-Joint")
-    st.write("Silakan buka expander di bawah ini untuk memasukkan foto spesifik pada masing-masing nomor joint:")
+    st.subheader("📸 Muat Naik Dokumentasi & Nilaikan Hasil (ACC/REJECT)")
+    st.write("Keputusan **ACC** atau **REJECT** hanya boleh dipilih *selepas* foto **Dev Apply** berjaya dimuat naik.")
     
     master_joint_photos = {}
-    for idx, row in edited_weld_df.iterrows():
+    need_rerun = False
+    
+    for idx, row in st.session_state.weld_data.iterrows():
         w_id = str(row["WELD NO"])
         p_name = str(row["PART NAME"])
+        current_res = str(row["RESULT"])
+        current_disc = str(row["TYPES OF DISCONTINUITIES"])
+        current_rem = str(row["REMARKS"])
         
-        with st.expander(f"Joint No: {w_id} ({p_name})"):
-            img_col1, img_col2 = st.columns(2)
-            with img_col1:
+        status_icon = "⏳ PENDING" if current_res == "PENDING" else f"✅ {current_res}" if current_res == "ACC" else f"❌ {current_res}"
+        
+        with st.expander(f"Joint No: {w_id} ({p_name}) - Status: {status_icon}"):
+            img_c1, img_c2 = st.columns(2)
+            with img_c1:
                 f_red = st.file_uploader(f"Foto Red Apply (Joint {w_id})", type=["png","jpg","jpeg"], key=f"red_{w_id}_{idx}")
                 f_red_bytes = io.BytesIO(f_red.getvalue()) if f_red else None
-            with img_col2:
+            with img_c2:
                 f_dev = st.file_uploader(f"Foto Dev Apply (Joint {w_id})", type=["png","jpg","jpeg"], key=f"dev_{w_id}_{idx}")
                 f_dev_bytes = io.BytesIO(f_dev.getvalue()) if f_dev else None
                 
             master_joint_photos[w_id] = {"red": f_red_bytes, "dev": f_dev_bytes}
+            
+            st.markdown("---")
+            if f_dev is not None:
+                st.success("✅ Foto Developer terdeteksi. Kunci penilaian (Result) telah dibuka.")
+                
+                eval_c1, eval_c2, eval_c3 = st.columns(3)
+                with eval_c1:
+                    new_res = st.selectbox("Keputusan (Result)", ["PENDING", "ACC", "REJECT"], 
+                                           index=["PENDING", "ACC", "REJECT"].index(current_res) if current_res in ["PENDING", "ACC", "REJECT"] else 0, 
+                                           key=f"res_{w_id}_{idx}")
+                
+                new_disc = current_disc
+                new_rem = current_rem
+                
+                if new_res == "REJECT":
+                    with eval_c2:
+                        idx_disc = discontinuity_options.index(current_disc) if current_disc in discontinuity_options else 0
+                        new_disc = st.selectbox("Jenis Cacat", discontinuity_options, index=idx_disc, key=f"disc_{w_id}_{idx}")
+                    with eval_c3:
+                        new_rem = st.text_input("Tindakan (Remarks)", value=current_rem if current_rem != "-" else "Repair", key=f"rem_{w_id}_{idx}")
+                elif new_res == "ACC":
+                    new_disc = "-"
+                    new_rem = "-"
+                elif new_res == "PENDING":
+                    new_disc = "-"
+                    new_rem = "-"
+                    
+                # Sinkronkan kembali ke jadual utama
+                if new_res != current_res or new_disc != current_disc or new_rem != current_rem:
+                    st.session_state.weld_data.at[idx, "RESULT"] = new_res
+                    st.session_state.weld_data.at[idx, "TYPES OF DISCONTINUITIES"] = new_disc
+                    st.session_state.weld_data.at[idx, "REMARKS"] = new_rem
+                    need_rerun = True
+            else:
+                st.warning("⚠️ Sila muat naik foto 'Dev Apply' terlebih dahulu untuk menilai ACC/REJECT.")
+                # Jika foto Dev Apply dipadam, kembali ke PENDING
+                if current_res != "PENDING":
+                    st.session_state.weld_data.at[idx, "RESULT"] = "PENDING"
+                    st.session_state.weld_data.at[idx, "TYPES OF DISCONTINUITIES"] = "-"
+                    st.session_state.weld_data.at[idx, "REMARKS"] = "-"
+                    need_rerun = True
+
+    if need_rerun:
+        st.rerun()
 
     st.markdown("---")
     
@@ -556,9 +598,8 @@ if main_menu == "LIQUID PENETRANT REPORT":
     logo_rt_io = io.BytesIO(up_logo_rt.getvalue()) if up_logo_rt else None
     logo_rb_io = io.BytesIO(up_logo_rb.getvalue()) if up_logo_rb else None
 
-    # Peringatan Download Jika Ada PENDING
-    if "PENDING" in edited_weld_df["RESULT"].values:
-        st.warning("⚠️ Perhatian: Masih ada sambungan las dengan status PENDING di tabel. Sangat disarankan untuk mengevaluasi dan mengubah statusnya menjadi ACC/REJECT sebelum mendownload laporan final.")
+    if "PENDING" in st.session_state.weld_data["RESULT"].values:
+        st.error("⚠️ Terdapat sambungan kimpalan (Joint) yang masih bersatus **PENDING**. Sila muat naik foto dan lengkapkan penilaiannya sebelum menjana laporan akhir.")
 
     col_btn1, col_btn2 = st.columns([2, 8])
     with col_btn1:
@@ -573,7 +614,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
             penetrant_method=penetrant_method, removal_method=removal_method,
             brand_name=brand_name, penetrant_type=penetrant_type, developer_type=developer_type,
             cleaner_type=cleaner_type, surface_prep=surface_prep, time_exam=time_exam,
-            scope_exam=scope_exam, data_df=edited_weld_df, 
+            scope_exam=scope_exam, data_df=st.session_state.weld_data, 
             logo_width_inch=logo_w_setting, 
             dict_joint_photos=master_joint_photos, photo_width_inch=photo_w_setting
         )
@@ -612,7 +653,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
         st.table(header_summary)
         
         st.write("#### Inspection Results Table")
-        display_df = edited_weld_df.copy()
+        display_df = st.session_state.weld_data.copy()
         display_df["ACC"] = display_df["RESULT"].apply(lambda x: "☑" if x == "ACC" else "☐")
         display_df["REJECT"] = display_df["RESULT"].apply(lambda x: "☑" if x == "REJECT" else "☐")
         display_df = display_df[["PART NAME", "WELD NO", "THICKNESS (MM)", "ACC", "REJECT", "TYPES OF DISCONTINUITIES", "REMARKS"]]

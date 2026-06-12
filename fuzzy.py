@@ -72,11 +72,11 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     # Atur Margin Halaman Cetak Standar Internasional A4
     sections = doc.sections
     for section in sections:
-        section.top_margin = Inches(2.25)      # Margin atas disetel proporsional
+        section.top_margin = Inches(1.80)      # Margin atas disetel proporsional
         section.bottom_margin = Inches(1.0)    
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.75)
-        section.header_distance = Inches(0.35) 
+        section.header_distance = Inches(0.15) 
         section.page_width = Inches(8.27)
         section.page_height = Inches(11.69)
 

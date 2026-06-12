@@ -115,7 +115,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     p_center.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_center = p_center.add_run(str(project).upper())
     run_center.bold = True
-    run_center.font.size = Pt(11)
+    run_center.font.size = Pt(15)
     run_center.font.name = 'Arial'
 
     cell_right_top.vertical_alignment = WD_ALIGN_VERTICAL.CENTER

@@ -58,8 +58,8 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
                          drawing_no, standard, description, penetrant_method, removal_method, 
                          brand_name, penetrant_type, developer_type, cleaner_type, 
-                         surface_prep, time_exam, scope_exam, data_df, logo_width_inch,
-                         dict_joint_photos, photo_width_inch):
+                         surface_prep, time_exam, scope_exam, data_df, logo_width_inch, logo_height_inch,
+                         dict_joint_photos, photo_width_inch, photo_height_inch):
     
     doc = Document()
     
@@ -102,7 +102,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     p_left = cell_left.paragraphs[0]
     p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_left_bytes is not None:
-        p_left.add_run().add_picture(logo_left_bytes, width=Inches(logo_width_inch))
+        p_left.add_run().add_picture(logo_left_bytes, width=Inches(logo_width_inch), height=Inches(logo_height_inch))
     else:
         p_left.add_run("[ LOGO KIRI ]").font.color.rgb = RGBColor(160, 160, 160)
 
@@ -120,7 +120,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     p_rt = cell_right_top.paragraphs[0]
     p_rt.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_right_top_bytes is not None:
-        p_rt.add_run().add_picture(logo_right_top_bytes, width=Inches(logo_width_inch))
+        p_rt.add_run().add_picture(logo_right_top_bytes, width=Inches(logo_width_inch), height=Inches(logo_height_inch))
     else:
         p_rt.add_run("[ LOGO KANAN ATAS ]").font.color.rgb = RGBColor(160, 160, 160)
 
@@ -129,7 +129,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     p_rb = cell_right_bottom.paragraphs[0]
     p_rb.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_right_bottom_bytes is not None:
-        p_rb.add_run().add_picture(logo_right_bottom_bytes, width=Inches(logo_width_inch))
+        p_rb.add_run().add_picture(logo_right_bottom_bytes, width=Inches(logo_width_inch), height=Inches(logo_height_inch))
     else:
         p_rb.add_run("[ LOGO KANAN BAWAH ]").font.color.rgb = RGBColor(160, 160, 160)
 
@@ -255,14 +255,13 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         for col_idx in [1, 2, 3, 4]:
             row_cells[col_idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         for idx in range(7):
-            row_cells[idx].paragraphs[0].runs[0].font.size = Pt(9)
-            row_cells[idx].paragraphs[0].runs[0].font.name = 'Arial'
+            p = row_cells[idx].paragraphs[0]
+            p.runs[0].font.size = Pt(9)
+            p.runs[0].font.name = 'Arial'
             
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
-    # -----------------------------------------------------------------------------------
-    # SEKSI VERIFIKASI TANDA TANGAN (TITLES KEMBALI KE TENGAH / CENTER)
-    # -----------------------------------------------------------------------------------
+    # Seksi Verifikasi Tanda Tangan
     table_sig = doc.add_table(rows=2, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
@@ -272,28 +271,26 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     sig_titles = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
     
     for idx, title_text in enumerate(sig_titles):
-        # KUNCI PERBAIKAN: Judul Box Tanda Tangan dikembalikan ke Rata TENGAH (CENTER)
         cell_title = table_sig.rows[0].cells[idx]
         cell_title.width = sig_widths[idx]
         cell_title.text = title_text
         p_t = cell_title.paragraphs[0]
-        p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER # Kembali ke Tengah Semula
+        p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER 
         p_t.runs[0].font.bold = True
         p_t.runs[0].font.size = Pt(9)
         p_t.runs[0].font.name = 'Arial'
         
-        # Isi Box Tempat Tanda Tangan (Isian Nama dan Tanggal tetap di Kiri)
         cell_box = table_sig.rows[1].cells[idx]
         cell_box.width = sig_widths[idx]
         set_cell_margins(cell_box, top=60, bottom=60, start=60, end=60)
         p_b = cell_box.paragraphs[0]
         p_b.text = "\n\n\n\n_______________________\nName:\nDate:"
-        p_b.alignment = WD_ALIGN_PARAGRAPH.LEFT # Isian Tetap Rata Kiri
+        p_b.alignment = WD_ALIGN_PARAGRAPH.LEFT 
         p_b.runs[0].font.size = Pt(9)
         p_b.runs[0].font.name = 'Arial'
 
     # -----------------------------------------------------------------------------------
-    # AREA LAMPIRAN FOTO DENGAN PADDING AMAN (BEBAS MENTOK GARIS)
+    # AREA LAMPIRAN FOTO PER-JOINT (KUNCI PERBAIKAN PANJANG & LEBAR SAMA RATA)
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -340,14 +337,14 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             photo_table.rows[1].cells[0].width = Inches(3.38)
             photo_table.rows[1].cells[1].width = Inches(3.39)
             
-            # Slot Foto Kiri: Red Apply
+            # Slot Foto Kiri: Red Apply (Dipaksa lebar & panjangnya sama via input)
             cell_r_img = photo_table.cell(0, 0)
             cell_r_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(cell_r_img, top=180, bottom=180, start=180, end=180)
             
             if photo_data["red"] is not None:
                 cell_r_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                cell_r_img.paragraphs[0].add_run().add_picture(photo_data["red"], width=Inches(photo_width_inch))
+                cell_r_img.paragraphs[0].add_run().add_picture(photo_data["red"], width=Inches(photo_width_inch), height=Inches(photo_height_inch))
             else:
                 cell_r_img.paragraphs[0].text = "[ Foto Red Apply Tidak Tersedia ]"
                 cell_r_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -359,14 +356,14 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             r_cap_run.font.size = Pt(8.5)
             r_cap_run.font.name = 'Arial'
             
-            # Slot Foto Kanan: Developer Apply
+            # Slot Foto Kanan: Developer Apply (Dipaksa lebar & panjangnya sama via input)
             cell_d_img = photo_table.cell(0, 1)
             cell_d_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(cell_d_img, top=180, bottom=180, start=180, end=180)
             
             if photo_data["dev"] is not None:
                 cell_d_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                cell_d_img.paragraphs[0].add_run().add_picture(photo_data["dev"], width=Inches(photo_width_inch))
+                cell_d_img.paragraphs[0].add_run().add_picture(photo_data["dev"], width=Inches(photo_width_inch), height=Inches(photo_height_inch))
             else:
                 cell_d_img.paragraphs[0].text = "[ Foto Developer Tidak Tersedia ]"
                 cell_d_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -399,9 +396,14 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
     st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto per-joint sambungan.")
 
+    # SIDEBAR KONTROL SLIDER (KOP LOGO & ATTACHMENT FOTO DOKUMENTASI)
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
-    logo_size_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=1.0, max_value=2.0, value=1.4, step=0.05)
-    photo_size_setting = st.sidebar.slider("Lebar Foto Lampiran / Attachment (Inchi)", min_value=1.5, max_value=3.2, value=2.2, step=0.05)
+    logo_w_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
+    logo_h_setting = st.sidebar.slider("Tinggi Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
+    
+    # PERBAIKAN: Kontrol Slider Lebar dan Tinggi untuk Lampiran Foto (Attachment) agar presisi sama rata
+    photo_w_setting = st.sidebar.slider("Lebar Foto Lampiran / Attachment (Inchi)", min_value=1.5, max_value=3.2, value=2.2, step=0.05)
+    photo_h_setting = st.sidebar.slider("Tinggi Foto Lampiran / Attachment (Inchi)", min_value=1.5, max_value=3.2, value=2.2, step=0.05)
 
     # 1. BLOK UNGGAH LOGO PERUSAHAAN (KOP ATAS)
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
@@ -536,6 +538,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
         generate_layout = st.button("🚀 Generate Screen Layout")
         
     with col_btn2:
+        # PERBAIKAN: Memasukkan variabel dimensi photo_w_setting & photo_h_setting ke Word report generator
         docx_buffer = generate_docx_report(
             logo_left_bytes=logo_l_io, logo_right_top_bytes=logo_rt_io, logo_right_bottom_bytes=logo_rb_io,
             client=client, project=project, equipment=equipment, auto_form_no=auto_form_no, 
@@ -544,8 +547,10 @@ if main_menu == "LIQUID PENETRANT REPORT":
             penetrant_method=penetrant_method, removal_method=removal_method,
             brand_name=brand_name, penetrant_type=penetrant_type, developer_type=developer_type,
             cleaner_type=cleaner_type, surface_prep=surface_prep, time_exam=time_exam,
-            scope_exam=scope_exam, data_df=edited_weld_df, logo_width_inch=logo_size_setting,
-            dict_joint_photos=master_joint_photos, photo_width_inch=photo_size_setting
+            scope_exam=scope_exam, data_df=edited_weld_df, 
+            logo_width_inch=logo_w_setting, logo_height_inch=logo_h_setting,
+            dict_joint_photos=master_joint_photos, 
+            photo_width_inch=photo_w_setting, photo_height_inch=photo_h_setting
         )
         
         st.download_button(
@@ -590,7 +595,8 @@ if main_menu == "LIQUID PENETRANT REPORT":
         
         st.write("#### Signatures")
         sig_cols = st.columns(4)
-        for i, title in enumerate(sig_titles):
+        sig_titles_preview = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
+        for i, title in enumerate(sig_titles_preview):
             with sig_cols[i]:
                 st.write(f"**<center>{title}</center>**", unsafe_allow_html=True)
                 st.write("\n\n\n__________________")
@@ -598,7 +604,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
                 st.write("Date:")
                 
         # Preview Lampiran Foto Per-Joint di Web
-        st.write(f"#### 📸 Attachment Preview: Per-Joint Photos (Lebar Cetak Master: {photo_size_setting}\")")
+        st.write(f"#### 📸 Attachment Preview: Per-Joint Photos")
         for key_w, media in master_joint_photos.items():
             if media["red"] or media["dev"]:
                 st.write(f"**Joint Sambungan Las No: {key_w}**")

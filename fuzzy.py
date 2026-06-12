@@ -261,7 +261,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
     # -----------------------------------------------------------------------------------
-    # PERBAIKAN 2 & 3: BAGIAN TANDA TANGAN (RATA KIRI & DITAMBAHKAN FIELD DATE)
+    # SEKSI VERIFIKASI TANDA TANGAN (TITLES KEMBALI KE TENGAH / CENTER)
     # -----------------------------------------------------------------------------------
     table_sig = doc.add_table(rows=2, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -272,29 +272,28 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     sig_titles = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
     
     for idx, title_text in enumerate(sig_titles):
-        # Header Box Title Tanda Tangan
+        # KUNCI PERBAIKAN: Judul Box Tanda Tangan dikembalikan ke Rata TENGAH (CENTER)
         cell_title = table_sig.rows[0].cells[idx]
         cell_title.width = sig_widths[idx]
         cell_title.text = title_text
         p_t = cell_title.paragraphs[0]
-        p_t.alignment = WD_ALIGN_PARAGRAPH.LEFT # Berubah ke rata kiri
+        p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER # Kembali ke Tengah Semula
         p_t.runs[0].font.bold = True
         p_t.runs[0].font.size = Pt(9)
         p_t.runs[0].font.name = 'Arial'
         
-        # Isi Box Tempat Tanda Tangan & Nama Terverifikasi
+        # Isi Box Tempat Tanda Tangan (Isian Nama dan Tanggal tetap di Kiri)
         cell_box = table_sig.rows[1].cells[idx]
         cell_box.width = sig_widths[idx]
         set_cell_margins(cell_box, top=60, bottom=60, start=60, end=60)
         p_b = cell_box.paragraphs[0]
-        # PERBAIKAN: Format teks tanda tangan diubah ke rata kiri dan ditambah baris Date:
         p_b.text = "\n\n\n\n_______________________\nName:\nDate:"
-        p_b.alignment = WD_ALIGN_PARAGRAPH.LEFT # Mengunci rata kiri penuh
+        p_b.alignment = WD_ALIGN_PARAGRAPH.LEFT # Isian Tetap Rata Kiri
         p_b.runs[0].font.size = Pt(9)
         p_b.runs[0].font.name = 'Arial'
 
     # -----------------------------------------------------------------------------------
-    # PERBAIKAN 1: AREA LAMPIRAN FOTO DENGAN PADDING BEBAS MENTOK GARIS
+    # AREA LAMPIRAN FOTO DENGAN PADDING AMAN (BEBAS MENTOK GARIS)
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -344,7 +343,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             # Slot Foto Kiri: Red Apply
             cell_r_img = photo_table.cell(0, 0)
             cell_r_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            # PERBAIKAN 1: Tambah margin dxa besar di dalam sel agar foto tidak mentok garis tabel
             set_cell_margins(cell_r_img, top=180, bottom=180, start=180, end=180)
             
             if photo_data["red"] is not None:
@@ -364,7 +362,6 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             # Slot Foto Kanan: Developer Apply
             cell_d_img = photo_table.cell(0, 1)
             cell_d_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-            # PERBAIKAN 1: Tambah margin dxa besar di dalam sel agar foto tidak mentok garis tabel
             set_cell_margins(cell_d_img, top=180, bottom=180, start=180, end=180)
             
             if photo_data["dev"] is not None:
@@ -593,10 +590,9 @@ if main_menu == "LIQUID PENETRANT REPORT":
         
         st.write("#### Signatures")
         sig_cols = st.columns(4)
-        sig_titles_preview = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
-        for i, title in enumerate(sig_titles_preview):
+        for i, title in enumerate(sig_titles):
             with sig_cols[i]:
-                st.write(f"**{title}**")
+                st.write(f"**<center>{title}</center>**", unsafe_allow_html=True)
                 st.write("\n\n\n__________________")
                 st.write("Name:")
                 st.write("Date:")

@@ -34,7 +34,7 @@ def set_cell_background(cell, fill_hex):
     cell._tc.get_or_add_tcPr().append(shading_elm)
 
 def prevent_row_split(row):
-    """Mencegah baris tabel terpotong di antara dua halaman (internal split)"""
+    """Mencegah baris tabel terpotong di antara dua halaman"""
     trPr = row._tr.get_or_add_trPr()
     trPr.append(parse_xml(r'<w:cantSplit {}/>'.format(nsdecls('w'))))
 
@@ -42,22 +42,6 @@ def set_repeat_header(row):
     """Mengatur baris tabel agar otomatis diulang di halaman berikutnya"""
     trPr = row._tr.get_or_add_trPr()
     trPr.append(parse_xml(r'<w:tblHeader {}/>'.format(nsdecls('w'))))
-
-def keep_row_with_next(row):
-    """Mengunci agar baris berjalan selalu satu halaman dengan baris di bawahnya (Anti-Separated)"""
-    for cell in row.cells:
-        for paragraph in cell.paragraphs:
-            paragraph.paragraph_format.keep_with_next = True
-
-def set_table_floating_bottom(table):
-    """PERBAIKAN UTAMA: Mengunci posisi tabel tanda tangan agar selalu berada di paling bawah halaman"""
-    tblPr = table._tbl.tblPr
-    existing = tblPr.find(qn('w:tblpPr'))
-    if existing is not None:
-        tblPr.remove(existing)
-    # Suntikkan XML khusus untuk memaksa posisi Vertikal rata bawah (vAlign="bottom") terhadap margin cetak
-    tblpPr = parse_xml(r'<w:tblpPr {} w:vAnchor="margin" w:vAlign="bottom" w:hAnchor="margin" w:hAlign="center" w:leftFromText="180" w:rightFromText="180" w:topFromText="180" w:bottomFromText="180"/>'.format(nsdecls('w')))
-    tblPr.append(tblpPr)
 
 def add_xml_field(run, field_name):
     """Menyisipkan field kode dinamis MS Word (PAGE / NUMPAGES)"""
@@ -75,7 +59,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
                          drawing_no, standard, description, penetrant_method, removal_method, 
                          brand_name, penetrant_type, developer_type, cleaner_type, 
                          surface_prep, time_exam, scope_exam, data_df, logo_width_inch, logo_height_inch,
-                         dict_joint_photos, photo_width_inch):
+                         dict_joint_photos):
     
     doc = Document()
     
@@ -278,41 +262,40 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
     # -----------------------------------------------------------------------------------
-    # SEKSI VERIFIKASI TANDA TANGAN (TERKUNCI DI PALING BAWAH HALAMAN TERAKHIR)
+    # PERBAIKAN TOTAL: TABEL TANDA TANGAN ANTI-SPLIT (1 BARIS SAJA)
+    # Menyatukan judul dan isian dalam 1 sel agar tidak akan pernah terpisah oleh page break
     # -----------------------------------------------------------------------------------
-    table_sig = doc.add_table(rows=2, cols=4)
+    table_sig = doc.add_table(rows=1, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
-    prevent_row_split(table_sig.rows[0])
-    prevent_row_split(table_sig.rows[1])
-    
-    # AMANKAN POSISI DI PALING BAWAH HALAMAN TERAKHIR VIA FLOATING XML METHOD
-    set_table_floating_bottom(table_sig)
+    prevent_row_split(table_sig.rows[0]) # Mengunci tabel 1 baris ini secara absolut
     
     sig_widths = [Inches(1.69), Inches(1.69), Inches(1.69), Inches(1.70)]
     sig_titles = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
     
     for idx, title_text in enumerate(sig_titles):
-        cell_title = table_sig.rows[0].cells[idx]
-        cell_title.width = sig_widths[idx]
-        cell_title.text = title_text
-        p_t = cell_title.paragraphs[0]
-        p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER 
-        p_t.runs[0].font.bold = True
-        p_t.runs[0].font.size = Pt(9)
-        p_t.runs[0].font.name = 'Arial'
+        cell = table_sig.rows[0].cells[idx]
+        cell.width = sig_widths[idx]
+        set_cell_margins(cell, top=60, bottom=60, start=60, end=60)
         
-        cell_box = table_sig.rows[1].cells[idx]
-        cell_box.width = sig_widths[idx]
-        set_cell_margins(cell_box, top=60, bottom=60, start=60, end=60)
-        p_b = cell_box.paragraphs[0]
-        p_b.text = "\n\n\n\n_______________________\nName:\nDate:"
+        # Paragraf 1: Judul di Center
+        p_t = cell.paragraphs[0]
+        p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER 
+        p_t.paragraph_format.keep_with_next = True # Menggandeng teks bawahnya
+        r_t = p_t.add_run(title_text)
+        r_t.bold = True
+        r_t.font.size = Pt(9)
+        r_t.font.name = 'Arial'
+        
+        # Paragraf 2: Isian Tanda Tangan, Nama, Tanggal di Kiri
+        p_b = cell.add_paragraph()
         p_b.alignment = WD_ALIGN_PARAGRAPH.LEFT 
-        p_b.runs[0].font.size = Pt(9)
-        p_b.runs[0].font.name = 'Arial'
+        r_b = p_b.add_run("\n\n\n\n_______________________\nName:\nDate:")
+        r_b.font.size = Pt(9)
+        r_b.font.name = 'Arial'
 
     # -----------------------------------------------------------------------------------
-    # AREA LAMPIRAN FOTO PER-JOINT (DENGAN PADDING AMAN & METODE ANTI-PISAH HALAMAN)
+    # AREA LAMPIRAN FOTO: OTOMATIS LOCK ASPECT RATIO 100% (NATIVE SIZE)
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -356,21 +339,23 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
             prevent_row_split(photo_table.rows[0])
             prevent_row_split(photo_table.rows[1])
-            keep_row_with_next(photo_table.rows[0]) 
+            for cell in photo_table.rows[0].cells:
+                for paragraph in cell.paragraphs:
+                    paragraph.paragraph_format.keep_with_next = True
             
             photo_table.rows[0].cells[0].width = Inches(3.38)
             photo_table.rows[0].cells[1].width = Inches(3.39)
             photo_table.rows[1].cells[0].width = Inches(3.38)
             photo_table.rows[1].cells[1].width = Inches(3.39)
             
-            # Slot Foto Kiri: Red Apply
+            # Slot Foto Kiri: Red Apply 
             cell_r_img = photo_table.cell(0, 0)
             cell_r_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
             set_cell_margins(cell_r_img, top=180, bottom=180, start=180, end=180)
             
             if photo_data["red"] is not None:
                 cell_r_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                cell_r_img.paragraphs[0].add_run().add_picture(photo_data["red"], width=Inches(photo_width_inch))
+                cell_r_img.paragraphs[0].add_run().add_picture(photo_data["red"])
                 cell_r_img.paragraphs[0].paragraph_format.keep_with_next = True
             else:
                 cell_r_img.paragraphs[0].text = "[ Foto Red Apply Tidak Tersedia ]"
@@ -391,7 +376,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
             if photo_data["dev"] is not None:
                 cell_d_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                cell_d_img.paragraphs[0].add_run().add_picture(photo_data["dev"], width=Inches(photo_width_inch))
+                cell_d_img.paragraphs[0].add_run().add_picture(photo_data["dev"])
                 cell_d_img.paragraphs[0].paragraph_format.keep_with_next = True
             else:
                 cell_d_img.paragraphs[0].text = "[ Foto Developer Tidak Tersedia ]"
@@ -424,13 +409,13 @@ st.sidebar.info("Aplikasi Integrasi: LPI Generator & Volume Calculator.")
 
 if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
-    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto seragam per-joint.")
+    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto asli proporsional per-joint.")
 
-    # SIDEBAR KONTROL SLIDER KOMPONEN
+    # SIDEBAR KONTROL SLIDER KOP LOGO
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
     logo_w_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
     logo_h_setting = st.sidebar.slider("Tinggi Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
-    photo_w_setting = st.sidebar.slider("Lebar Cetak Foto Lampiran / Attachment (Inchi)", min_value=1.5, max_value=3.2, value=2.4, step=0.05)
+    st.sidebar.info("💡 Catatan: Foto lampiran (attachment) sekarang di-lock otomatis 100% sesuai ukuran & aspect ratio file aslinya.")
 
     # 1. BLOK UNGGAH LOGO PERUSAHAAN (KOP ATAS)
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
@@ -537,6 +522,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.write("Silakan buka expander di bawah ini untuk memasukkan foto spesifik pada masing-masing nomor joint:")
     
     master_joint_photos = {}
+    
     for idx, row in edited_weld_df.iterrows():
         w_id = str(row["WELD NO"])
         p_name = str(row["PART NAME"])
@@ -574,8 +560,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
             cleaner_type=cleaner_type, surface_prep=surface_prep, time_exam=time_exam,
             scope_exam=scope_exam, data_df=edited_weld_df, 
             logo_width_inch=logo_w_setting, logo_height_inch=logo_h_setting,
-            dict_joint_photos=master_joint_photos,
-            photo_width_inch=photo_w_setting
+            dict_joint_photos=master_joint_photos
         )
         
         st.download_button(
@@ -620,7 +605,8 @@ if main_menu == "LIQUID PENETRANT REPORT":
         
         st.write("#### Signatures")
         sig_cols = st.columns(4)
-        for i, title in enumerate(sig_titles):
+        sig_titles_preview = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
+        for i, title in enumerate(sig_titles_preview):
             with sig_cols[i]:
                 st.write(f"**<center>{title}</center>**", unsafe_allow_html=True)
                 st.write("\n\n\n__________________")

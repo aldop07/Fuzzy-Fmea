@@ -52,9 +52,10 @@ def add_xml_field(run, field_name):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # =======================================================================================
-# FUNGSI UNTUK GENERATE FILE WORD (.DOCX) DENGAN LOGO UNIFORM & SIMETRIS
+# FUNGSI UNTUK GENERATE FILE WORD (.DOCX) DENGAN KOP STANDAR & FOTO DOKUMENTASI
 # =======================================================================================
 def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
+                         photo_penetrant_bytes, photo_developer_bytes,
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
                          drawing_no, standard, description, penetrant_method, removal_method, 
                          brand_name, penetrant_type, developer_type, cleaner_type, 
@@ -80,12 +81,10 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     for p in header.paragraphs:
         p.text = ""
         
-    # Lebar total tabel kop terkunci pada 6.77 Inci
     kop_table = header.add_table(3, 4, Inches(6.77))
     kop_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     kop_table.style = 'Table Grid'
     
-    # RE-DESIGN LEBAR KOLOM: Membuat container kiri (1.85") dan kanan (0.85" + 1.00" = 1.85") sama besar!
     col_widths = [Inches(1.85), Inches(3.07), Inches(0.85), Inches(1.00)]
     for row in kop_table.rows:
         prevent_row_split(row)
@@ -98,7 +97,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     cell_right_top = kop_table.cell(0, 2).merge(kop_table.cell(0, 3))     
     cell_right_bottom = kop_table.cell(1, 2).merge(kop_table.cell(1, 3))  
 
-    # Mengisi Konten Logo Kiri (Menggunakan nilai variabel uniform logo_width_inch)
+    # Mengisi Konten Logo Kiri
     cell_left.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_left = cell_left.paragraphs[0]
     p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -116,7 +115,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     run_center.font.size = Pt(11)
     run_center.font.name = 'Arial'
 
-    # Mengisi Konten Logo Kanan Atas (Menggunakan nilai variabel uniform logo_width_inch)
+    # Mengisi Konten Logo Kanan Atas
     cell_right_top.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_rt = cell_right_top.paragraphs[0]
     p_rt.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -125,7 +124,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     else:
         p_rt.add_run("[ LOGO KANAN ATAS ]").font.color.rgb = RGBColor(160, 160, 160)
 
-    # Mengisi Konten Logo Kanan Bawah (Menggunakan nilai variabel uniform logo_width_inch)
+    # Mengisi Konten Logo Kanan Bawah
     cell_right_bottom.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_rb = cell_right_bottom.paragraphs[0]
     p_rb.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -276,7 +275,64 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             p.runs[0].font.size = Pt(9)
             p.runs[0].font.name = 'Arial'
             
-    doc.add_paragraph().paragraph_format.space_after = Pt(24)
+    doc.add_paragraph().paragraph_format.space_after = Pt(12)
+
+    # -----------------------------------------------------------------------------------
+    # NEW FEATURE: FOTO DOKUMENTASI PENGUJIAN (SIDE BY SIDE SEJAJAR)
+    # -----------------------------------------------------------------------------------
+    if photo_penetrant_bytes is not None or photo_developer_bytes is not None:
+        h3 = doc.add_paragraph()
+        h3_run = h3.add_run("Inspection Photographs / Documentation")
+        h3_run.bold = True
+        h3_run.font.size = Pt(11)
+        h3_run.font.name = 'Arial'
+        h3.paragraph_format.space_before = Pt(12)
+        h3.paragraph_format.space_after = Pt(6)
+        
+        # Grid Tabel Khusus Foto (1 Baris x 2 Kolom) agar layout terkunci simetris
+        photo_table = doc.add_table(1, 2, Inches(6.77))
+        photo_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        photo_table.style = None # Kosong tanpa border agar minimalis bersih
+        prevent_row_split(photo_table.rows[0])
+        
+        photo_table.rows[0].cells[0].width = Inches(3.38)
+        photo_table.rows[0].cells[1].width = Inches(3.39)
+        
+        # Slot 1: Foto Aplikasi Penetran (Red Apply)
+        cell_p = photo_table.rows[0].cells[0]
+        cell_p.vertical_alignment = WD_ALIGN_VERTICAL.TOP
+        p_photo1 = cell_p.paragraphs[0]
+        p_photo1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if photo_penetrant_bytes is not None:
+            p_photo1.add_run().add_picture(photo_penetrant_bytes, width=Inches(3.0))
+            p_cap1 = cell_p.add_paragraph()
+            p_cap1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p_cap1.paragraph_format.space_before = Pt(4)
+            r_cap1 = p_cap1.add_run("Figure 1: Penetrant Application (Red Apply)")
+            r_cap1.font.size = Pt(8.5)
+            r_cap1.font.italic = True
+            r_cap1.font.name = 'Arial'
+        else:
+            p_photo1.add_run("[ Foto Penetran Belum Diunggah ]").font.color.rgb = RGBColor(180, 180, 180)
+            
+        # Slot 2: Foto Aplikasi Developer
+        cell_d = photo_table.rows[0].cells[1]
+        cell_d.vertical_alignment = WD_ALIGN_VERTICAL.TOP
+        p_photo2 = cell_d.paragraphs[0]
+        p_photo2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if photo_developer_bytes is not None:
+            p_photo2.add_run().add_picture(photo_developer_bytes, width=Inches(3.0))
+            p_cap2 = cell_d.add_paragraph()
+            p_cap2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p_cap2.paragraph_format.space_before = Pt(4)
+            r_cap2 = p_cap2.add_run("Figure 2: Developer Application")
+            r_cap2.font.size = Pt(8.5)
+            r_cap2.font.italic = True
+            r_cap2.font.name = 'Arial'
+        else:
+            p_photo2.add_run("[ Foto Developer Belum Diunggah ]").font.color.rgb = RGBColor(180, 180, 180)
+
+        doc.add_paragraph().paragraph_format.space_after = Pt(16)
 
     # Bagian 4 Kolom Tanda Tangan Paralel
     table_sig = doc.add_table(rows=2, cols=4)
@@ -286,248 +342,4 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     prevent_row_split(table_sig.rows[1])
     
     sig_widths = [Inches(1.69), Inches(1.69), Inches(1.69), Inches(1.70)]
-    sig_titles = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
-    
-    for idx, title_text in enumerate(sig_titles):
-        cell_title = table_sig.rows[0].cells[idx]
-        cell_title.width = sig_widths[idx]
-        cell_title.text = title_text
-        p_t = cell_title.paragraphs[0]
-        p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p_t.runs[0].font.bold = True
-        p_t.runs[0].font.size = Pt(9)
-        p_t.runs[0].font.name = 'Arial'
-        
-        cell_box = table_sig.rows[1].cells[idx]
-        cell_box.width = sig_widths[idx]
-        p_b = cell_box.paragraphs[0]
-        p_b.text = "\n\n\n\n__________________\nName:"
-        p_b.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p_b.runs[0].font.size = Pt(9)
-        p_b.runs[0].font.name = 'Arial'
-
-    bio = io.BytesIO()
-    doc.save(bio)
-    bio.seek(0)
-    return bio
-
-
-# =======================================================================================
-# MENU UTAMA APLIKASI STREAMLIT
-# =======================================================================================
-st.sidebar.title("Navigation Menu")
-main_menu = st.sidebar.radio("PILIH MODUL APLIKASI:", ["LIQUID PENETRANT REPORT", "CONSUMABLE CALCULATE"])
-
-st.sidebar.markdown("---")
-st.sidebar.info("Aplikasi Integrasi: LPI Generator & Volume Calculator.")
-
-if main_menu == "LIQUID PENETRANT REPORT":
-    st.title("📋 Liquid Penetrant Inspection Report Generator")
-    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant secara otomatis.")
-
-    # SLIDER UNTUK MENGONTROL UKURAN LOGO SECARA UNIFORM (SAMA UNTUK SEMUA)
-    st.sidebar.subheader("📐 Ukuran Logo Master (.docx)")
-    logo_size_setting = st.sidebar.slider("Lebar Semua Logo (Inchi)", min_value=1.0, max_value=2.0, value=1.4, step=0.05)
-
-    st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
-    log_col1, log_col2, log_col3 = st.columns(3)
-    
-    with log_col1:
-        up_logo_left = st.file_uploader("1. Logo Kiri (Main Contractor / Owner)", type=["png", "jpg", "jpeg"])
-        if up_logo_left: st.image(up_logo_left, width=130, caption="Preview Logo Kiri")
-        
-    with log_col2:
-        up_logo_rt = st.file_uploader("2. Logo Kanan Atas (Project Brand)", type=["png", "jpg", "jpeg"])
-        if up_logo_rt: st.image(up_logo_rt, width=130, caption="Preview Kanan Atas")
-        
-    with log_col3:
-        up_logo_rb = st.file_uploader("3. Logo Kanan Bawah (Sub-Consultant / QA)", type=["png", "jpg", "jpeg"])
-        if up_logo_rb: st.image(up_logo_rb, width=130, caption="Preview Kanan Bawah")
-
-    st.markdown("---")
-
-    current_date = datetime.now()
-    date_str = current_date.strftime("12-06-2026") 
-    date_display_str = current_date.strftime("%d %B %Y").upper() 
-    month_year_slug = current_date.strftime("%B/%Y").upper() 
-    auto_form_no = f"05/LPI/DAMAC/{month_year_slug}" 
-
-    st.subheader("📝 Header & Document Control Information")
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        client = st.text_input("Client", value="PT. TRAKINDO UTAMA")
-        project = st.text_input("Project", value="DAMAC DIGITAL JKT01 DAY 2")
-        equipment = st.text_input("Equipment / System", value="FUEL PIPE") 
-
-    with col2:
-        st.text_input("Form No (Otomatis)", value=auto_form_no, disabled=True)
-        st.text_input("Date (Otomatis)", value=date_str, disabled=True)
-        drawing_no = st.text_input("Drawing No", value="ISO-JKT01-003") 
-
-    with col3:
-        doc_no_input = st.text_input("Doc No. (Kop)", value="DOC-DAMAC-LPI-002")
-        rev_no_input = st.text_input("Rev. No (Kop)", value="0")
-        st.info("💡 Catatan: Nomor halaman sekarang aktif otomatis menggunakan field Native Word (Page X of Y).")
-        standard = st.text_input("Standard", value="ASME B31.3")
-        description = st.text_input("Description", value="TYPE 1")
-
-    st.markdown("---")
-    st.subheader("🔍 Inspection Parameters")
-    col_p1, col_p2, col_p3 = st.columns(3)
-
-    with col_p1:
-        penetrant_method = st.radio("Penetrant Method", ["VISIBLE", "FLUORECENT"], index=0)
-        removal_method = st.radio("Removal Method", ["SOLVENT REMOVABLE", "WATER WASHABLE", "POST EMULSIFIEBLE"], index=0)
-
-    with col_p2:
-        brand_name = st.text_input("Brand Name", value="MAGNAFLUX")
-        penetrant_type = st.text_input("Penetrant Code", value="SPL-SP2")
-        developer_type = st.text_input("Developer Code", value="SKD-S2")
-        cleaner_type = st.text_input("Cleaner Code", value="SKC-S")
-
-    with col_p3:
-        surface_prep = st.radio("Surface Preparation", ["AS WELDED", "MACHINING", "GRINDING", "OTHER"], index=0)
-        time_exam = st.radio("Time of Examination", ["AFTER WELDING", "AFTER HYDROTEST", "AFTER PWHT", "OTHER"], index=0)
-        scope_exam = st.radio("Scope of Examination", ["BASE METAL", "WELD METAL", "BACK CHIPPING", "OTHER"], index=1)
-
-    st.markdown("---")
-    st.subheader("📊 Weld Inspection Results Data")
-
-    part_options_1 = ["PIPE", "PLATE", "ELBOW", "TEE", "FLANGE"]
-    part_options_2 = ["FLANGE", "ELBOW", "EQUAL TEE", "PIPE", "VALVE"]
-    discontinuity_options = ["Crack", "Porosity", "Slag Inclusion", "Incomplete Fusion", "Incomplete Penetration", "Undercut", "Linear Indication", "Rounded Indication"]
-
-    if 'weld_data' not in st.session_state:
-        st.session_state.weld_data = pd.DataFrame([
-            {"PART NAME": "PIPE – FLANGE", "WELD NO": "1", "THICKNESS (MM)": 3.91, "RESULT": "ACC", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"},
-            {"PART NAME": "PIPE – ELBOW", "WELD NO": "2", "THICKNESS (MM)": 3.91, "RESULT": "ACC", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"},
-            {"PART NAME": "PIPE – EQUAL TEE", "WELD NO": "6", "THICKNESS (MM)": 3.91, "RESULT": "ACC", "TYPES OF DISCONTINUITIES": "-", "REMARKS": "-"}
-        ])
-
-    with st.expander("➕ Tambah Baris Hasil Las Baru"):
-        c1_a, c1_b, c2, c3, c4 = st.columns([2, 2, 1.5, 1.5, 2])
-        
-        with c1_a:
-            part_1 = st.selectbox("Pilihan 1 (Base)", part_options_1)
-        with c1_b:
-            part_2 = st.selectbox("Pilihan 2 (Joint)", part_options_2)
-            
-        with c2:
-            new_weld_no = st.text_input("Weld No", value="3")
-        with c3:
-            new_thickness = st.number_input("Thickness (mm)", value=3.91, step=0.01)
-        with c4:
-            new_result = st.selectbox("Result", ["ACC", "REJECT"])
-            
-        new_discontinuity = "-"
-        if new_result == "REJECT":
-            new_discontinuity = st.selectbox("Types of Discontinuities", discontinuity_options)
-            new_remarks = st.text_input("Remarks", value="Repair Required")
-        else:
-            new_remarks = "-"
-
-        if st.button("Masukkan ke Tabel"):
-            combined_part_name = f"{part_1} – {part_2}"
-            new_row = {
-                "PART NAME": combined_part_name, "WELD NO": new_weld_no, "THICKNESS (MM)": new_thickness,
-                "RESULT": new_result, "TYPES OF DISCONTINUITIES": new_discontinuity, "REMARKS": new_remarks
-            }
-            st.session_state.weld_data = pd.concat([st.session_state.weld_data, pd.DataFrame([new_row])], ignore_index=True)
-            st.success(f"Data baru '{combined_part_name}' berhasil ditambahkan ke tabel!")
-
-    all_combined_options = [f"{p1} – {p2}" for p1 in part_options_1 for p2 in part_options_2]
-    existing_parts = st.session_state.weld_data["PART NAME"].unique().tolist()
-    final_part_config_options = list(set(all_combined_options + existing_parts))
-
-    edited_weld_df = st.data_editor(
-        st.session_state.weld_data, 
-        num_rows="dynamic", 
-        use_container_width=True,
-        column_config={
-            "PART NAME": st.column_config.SelectboxColumn("PART NAME", options=final_part_config_options, required=True),
-            "RESULT": st.column_config.SelectboxColumn("RESULT", options=["ACC", "REJECT"], required=True),
-            "TYPES OF DISCONTINUITIES": st.column_config.SelectboxColumn("TYPES OF DISCONTINUITIES", options=["-"] + discontinuity_options, required=True)
-        }
-    )
-
-    st.markdown("---")
-    
-    logo_l_io = io.BytesIO(up_logo_left.getvalue()) if up_logo_left else None
-    logo_rt_io = io.BytesIO(up_logo_rt.getvalue()) if up_logo_rt else None
-    logo_rb_io = io.BytesIO(up_logo_rb.getvalue()) if up_logo_rb else None
-
-    col_btn1, col_btn2 = st.columns([2, 8])
-    with col_btn1:
-        generate_layout = st.button("🚀 Generate Screen Layout")
-        
-    with col_btn2:
-        # Ditambahkan argumen 'logo_width_inch' ke pemanggilan fungsi utama
-        docx_buffer = generate_docx_report(
-            logo_left_bytes=logo_l_io, logo_right_top_bytes=logo_rt_io, logo_right_bottom_bytes=logo_rb_io,
-            client=client, project=project, equipment=equipment, auto_form_no=auto_form_no, 
-            date_str=date_str, doc_no=doc_no_input, rev_no=rev_no_input,
-            drawing_no=drawing_no, standard=standard, description=description, 
-            penetrant_method=penetrant_method, removal_method=removal_method,
-            brand_name=brand_name, penetrant_type=penetrant_type, developer_type=developer_type,
-            cleaner_type=cleaner_type, surface_prep=surface_prep, time_exam=time_exam,
-            scope_exam=scope_exam, data_df=edited_weld_df, logo_width_inch=logo_size_setting
-        )
-        
-        st.download_button(
-            label="📥 Download Official Word Report (.docx)",
-            data=docx_buffer,
-            file_name=f"LPI_Report_{auto_form_no.replace('/', '_')}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-
-    if generate_layout:
-        st.markdown("## 📄 PREVIEW REPORT LAYOUT (PAGE HEADER MODEL)")
-        st.markdown(
-            f"""
-            <div style="border:2px solid #333; padding:15px; border-radius:5px; background-color:#FAFAFA">
-                <table style="width:100%; border-collapse:collapse; border:none;">
-                    <tr>
-                        <td style="width:27%; text-align:center; border-right:1px solid #ccc; padding:10px;"><b>[ LOGO KIRI ]</b></td>
-                        <td style="width:46%; text-align:center; border-right:1px solid #ccc; padding:10px;"><h4>{project.upper()}</h4></td>
-                        <td style="width:27%; text-align:center; padding:10px;"><b>[ LOGO KANAN ATAS ]</b><hr style="margin:5px 0;"><b>[ LOGO KANAN BAWAH ]</b></td>
-                    </tr>
-                </table>
-                <table style="width:100%; margin-top:10px; border-top:2px solid #333; font-size:12px;">
-                    <tr>
-                        <td><b>Date:</b> {date_str}</td>
-                        <td><b>Doc No:</b> {doc_no_input if doc_no_input else '-'}</td>
-                        <td style="text-align:center;"><b>Rev:</b> {rev_no_input}</td>
-                        <td style="text-align:right; color:#0056b3;"><b>Page:</b> [Auto Dynamic Fields - {logo_size_setting}"]</td>
-                    </tr>
-                </table>
-            </div>
-            """, 
-            unsafe_allow_html=True
-        )
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        header_summary = pd.DataFrame({
-            "FIELD A": ["CLIENT", "PROJECT", "EQUIPMENT / SYSTEM", "DRAWING NO", "STANDARD / DESC"],
-            "VALUE A": [client, project, equipment, drawing_no, f"{standard} / {description}"],
-            "FIELD B": ["FORM NO", "DATE", "PENETRANT METHOD", "REMOVAL METHOD", "BRAND & MATERIALS"],
-            "VALUE B": [auto_form_no, date_display_str, f"☑ {penetrant_method}", f"☑ {removal_method}", f"{brand_name} ({penetrant_type}/{developer_type})"]
-        })
-        st.table(header_summary)
-        
-        st.write("#### Inspection Results Table")
-        display_df = edited_weld_df.copy()
-        display_df["ACC"] = display_df["RESULT"].apply(lambda x: "☑" if x == "ACC" else "☐")
-        display_df["REJECT"] = display_df["RESULT"].apply(lambda x: "☑" if x == "REJECT" else "☐")
-        display_df = display_df[["PART NAME", "WELD NO", "THICKNESS (MM)", "ACC", "REJECT", "TYPES OF DISCONTINUITIES", "REMARKS"]]
-        st.dataframe(display_df, use_container_width=True)
-        
-        st.write("#### Signatures")
-        sig_cols = st.columns(4)
-        sig_titles_preview = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
-        for i, title in enumerate(sig_titles_preview):
-            with sig_cols[i]:
-                st.write(f"**{title}**")
-                st.write("\n\n\n__________________")
-                st.write("Name:")
+    sig_titles =

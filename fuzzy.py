@@ -1,6 +1,3 @@
-Berikut adalah kode program lengkap yang sudah digabungkan secara rapi, memperbaiki beberapa penulisan import yang dempet, serta menyertakan fitur unggah kop logo perusahaan di bagian modul laporan LPI:
-
-Python
 import numpy as np
 import streamlit as st
 import pandas as pd

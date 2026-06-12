@@ -34,7 +34,7 @@ def set_cell_background(cell, fill_hex):
     cell._tc.get_or_add_tcPr().append(shading_elm)
 
 def prevent_row_split(row):
-    """Mencegah baris tabel terpotong di antara dua halaman"""
+    """Mencegah baris tabel terpotong di antara dua halaman (Sistem Pengunci Komponen)"""
     trPr = row._tr.get_or_add_trPr()
     trPr.append(parse_xml(r'<w:cantSplit {}/>'.format(nsdecls('w'))))
 
@@ -49,21 +49,6 @@ def keep_row_with_next(row):
         for paragraph in cell.paragraphs:
             paragraph.paragraph_format.keep_with_next = True
 
-def set_table_floating_bottom(table):
-    """
-    PERBAIKAN: Memaksa tabel tanda tangan terkunci di margin BAWAH (BOTTOM) 
-    pada halaman ia berada.
-    """
-    tblPr = table._tbl.tblPr
-    existing = tblPr.find(qn('w:tblpPr'))
-    if existing is not None:
-        tblPr.remove(existing)
-        
-    # Menggunakan w:tblpYSpec="bottom" untuk mengunci posisi di bawah halaman
-    tblpPr_xml = r'<w:tblpPr {} w:vertAnchor="margin" w:tblpYSpec="bottom" w:horzAnchor="margin" w:tblpXSpec="center"/>'.format(nsdecls('w'))
-    tblpPr = parse_xml(tblpPr_xml)
-    tblPr.append(tblpPr)
-
 def add_xml_field(run, field_name):
     """Menyisipkan field kode dinamis MS Word (PAGE / NUMPAGES)"""
     fldChar1 = parse_xml(r'<w:fldChar {} w:fldCharType="begin"/>'.format(nsdecls('w')))
@@ -73,7 +58,7 @@ def add_xml_field(run, field_name):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # =======================================================================================
-# FUNGSI UTAMA GENERATE .DOCX DENGAN AUTO-SCALE ASPECT RATIO (ANTI GEPENG)
+# FUNGSI UTAMA GENERATE .DOCX
 # =======================================================================================
 def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
@@ -280,18 +265,16 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             p.runs[0].font.size = Pt(9)
             p.runs[0].font.name = 'Arial'
             
+    # Jarak spasi dinamis pasca tabel utama selesai
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
     # -----------------------------------------------------------------------------------
-    # SEKSI VERIFIKASI TANDA TANGAN (1 BARIS UTAMA, TERKUNCI DI BAWAH)
+    # SEKSI VERIFIKASI TANDA TANGAN (MENGALIR ALAMI / NATURAL FLOW - TIDAK DIKUNCI MATI)
     # -----------------------------------------------------------------------------------
     table_sig = doc.add_table(rows=1, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
-    prevent_row_split(table_sig.rows[0]) 
-    
-    # MENERAPKAN PENGUNCIAN DI BAWAH HALAMAN
-    set_table_floating_bottom(table_sig)
+    prevent_row_split(table_sig.rows[0]) # Mengunci baris tunggal agar judul & nama anti-pisah halaman
     
     sig_widths = [Inches(1.69), Inches(1.69), Inches(1.69), Inches(1.70)]
     sig_titles = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
@@ -301,7 +284,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         cell.width = sig_widths[idx]
         set_cell_margins(cell, top=60, bottom=60, start=60, end=60)
         
-        # Paragraf Judul (Tengah)
+        # Paragraf Judul Kotak (Rata Tengah / Center)
         p_t = cell.paragraphs[0]
         p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER 
         p_t.paragraph_format.keep_with_next = True 
@@ -310,18 +293,15 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         r_t.font.size = Pt(9)
         r_t.font.name = 'Arial'
         
-        # Paragraf Isian Nama & Tanggal (Kiri)
+        # Paragraf Isian Nama & Tanggal (Rata Kiri / Left)
         p_b = cell.add_paragraph()
         p_b.alignment = WD_ALIGN_PARAGRAPH.LEFT 
         r_b = p_b.add_run("\n\n\n\n_______________________\nName:\nDate:")
         r_b.font.size = Pt(9)
         r_b.font.name = 'Arial'
-        
-    # Tambahkan baris kosong setelah tabel untuk memastikan anchor format Word stabil
-    doc.add_paragraph()
 
     # -----------------------------------------------------------------------------------
-    # AREA LAMPIRAN FOTO: OTOMATIS LOCK ASPECT RATIO 100% (NATIVE SIZE)
+    # AREA LAMPIRAN FOTO: LEBAR STANDAR SERAGAM & ASPEK RASIO TERKUNCI (ANTI GEPENG)
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -429,13 +409,13 @@ st.sidebar.title("Navigation Menu")
 main_menu = st.sidebar.radio("PILIH MODUL APLIKASI:", ["LIQUID PENETRANT REPORT", "CONSUMABLE CALCULATE"])
 
 st.sidebar.markdown("---")
-st.sidebar.info("Aplikasi Integrasi: LPI Generator & Volume Calculator.")
+st.sidebar.info("Aplikasi LPI Generator Ter-Integrasi.")
 
 if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
-    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto asli proporsional per-joint.")
+    st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto seragam per-joint.")
 
-    # SIDEBAR KONTROL SLIDER KOP LOGO
+    # SIDEBAR KONTROL SLIDER KOMPONEN
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
     logo_w_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
     logo_h_setting = st.sidebar.slider("Tinggi Semua Logo Kop (Inchi)", min_value=0.8, max_value=2.0, value=1.3, step=0.05)
@@ -546,7 +526,6 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.write("Silakan buka expander di bawah ini untuk memasukkan foto spesifik pada masing-masing nomor joint:")
     
     master_joint_photos = {}
-    
     for idx, row in edited_weld_df.iterrows():
         w_id = str(row["WELD NO"])
         p_name = str(row["PART NAME"])

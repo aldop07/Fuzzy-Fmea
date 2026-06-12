@@ -52,13 +52,13 @@ def add_xml_field(run, field_name):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # =======================================================================================
-# FUNGSI UNTUK GENERATE FILE WORD (.DOCX) DENGAN NATIVE HEADER & AKTIF PAGE
+# FUNGSI UNTUK GENERATE FILE WORD (.DOCX) DENGAN LOGO UNIFORM & SIMETRIS
 # =======================================================================================
 def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
                          drawing_no, standard, description, penetrant_method, removal_method, 
                          brand_name, penetrant_type, developer_type, cleaner_type, 
-                         surface_prep, time_exam, scope_exam, data_df):
+                         surface_prep, time_exam, scope_exam, data_df, logo_width_inch):
     
     doc = Document()
     
@@ -74,35 +74,36 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         section.page_height = Inches(11.69)
 
     # -----------------------------------------------------------------------------------
-    # 1. INTEGRASI KOP SURAT KE NATIVE WORD HEADER (OTOMATIS REPEAT)
+    # 1. INTEGRASI KOP SURAT KE NATIVE WORD HEADER (UKURAN KOLOM SIMETRIS)
     # -----------------------------------------------------------------------------------
     header = doc.sections[0].header
     for p in header.paragraphs:
         p.text = ""
         
-    # PERBAIKAN DI SINI: Ditambahkan Inches(6.77) sebagai parameter lebar wajib di Header
+    # Lebar total tabel kop terkunci pada 6.77 Inci
     kop_table = header.add_table(3, 4, Inches(6.77))
     kop_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     kop_table.style = 'Table Grid'
     
-    col_widths = [Inches(1.80), Inches(3.10), Inches(0.80), Inches(1.07)]
+    # RE-DESIGN LEBAR KOLOM: Membuat container kiri (1.85") dan kanan (0.85" + 1.00" = 1.85") sama besar!
+    col_widths = [Inches(1.85), Inches(3.07), Inches(0.85), Inches(1.00)]
     for row in kop_table.rows:
         prevent_row_split(row)
         for idx, width in enumerate(col_widths):
             row.cells[idx].width = width
 
-    # Proses Merging Kolom Sesuai Blueprint Acuan Gambar
+    # Proses Merging Kolom Sesuai Blueprint
     cell_left = kop_table.cell(0, 0).merge(kop_table.cell(1, 0))          
     cell_center = kop_table.cell(0, 1).merge(kop_table.cell(1, 1))        
     cell_right_top = kop_table.cell(0, 2).merge(kop_table.cell(0, 3))     
     cell_right_bottom = kop_table.cell(1, 2).merge(kop_table.cell(1, 3))  
 
-    # Mengisi Konten Logo Kiri
+    # Mengisi Konten Logo Kiri (Menggunakan nilai variabel uniform logo_width_inch)
     cell_left.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_left = cell_left.paragraphs[0]
     p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_left_bytes is not None:
-        p_left.add_run().add_picture(logo_left_bytes, width=Inches(1.4))
+        p_left.add_run().add_picture(logo_left_bytes, width=Inches(logo_width_inch))
     else:
         p_left.add_run("[ LOGO KIRI ]").font.color.rgb = RGBColor(160, 160, 160)
 
@@ -115,21 +116,21 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     run_center.font.size = Pt(11)
     run_center.font.name = 'Arial'
 
-    # Mengisi Konten Logo Kanan Atas
+    # Mengisi Konten Logo Kanan Atas (Menggunakan nilai variabel uniform logo_width_inch)
     cell_right_top.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_rt = cell_right_top.paragraphs[0]
     p_rt.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_right_top_bytes is not None:
-        p_rt.add_run().add_picture(logo_right_top_bytes, width=Inches(1.4))
+        p_rt.add_run().add_picture(logo_right_top_bytes, width=Inches(logo_width_inch))
     else:
         p_rt.add_run("[ LOGO KANAN ATAS ]").font.color.rgb = RGBColor(160, 160, 160)
 
-    # Mengisi Konten Logo Kanan Bawah
+    # Mengisi Konten Logo Kanan Bawah (Menggunakan nilai variabel uniform logo_width_inch)
     cell_right_bottom.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_rb = cell_right_bottom.paragraphs[0]
     p_rb.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_right_bottom_bytes is not None:
-        p_rb.add_run().add_picture(logo_right_bottom_bytes, width=Inches(1.4))
+        p_rb.add_run().add_picture(logo_right_bottom_bytes, width=Inches(logo_width_inch))
     else:
         p_rb.add_run("[ LOGO KANAN BAWAH ]").font.color.rgb = RGBColor(160, 160, 160)
 
@@ -143,7 +144,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     meta_cells[1].paragraphs[0].text = f"Doc No.: {doc_no if doc_no else '-'}"
     meta_cells[2].paragraphs[0].text = f"Rev. {rev_no}"
     
-    # AKTIF PAGE FIELD GENERATOR (Page X of Y Otomatis)
+    # Dynamic Page Numbering
     p_page = meta_cells[3].paragraphs[0]
     p_page.text = "Page "
     add_xml_field(p_page.add_run(), "PAGE")
@@ -318,11 +319,15 @@ st.sidebar.title("Navigation Menu")
 main_menu = st.sidebar.radio("PILIH MODUL APLIKASI:", ["LIQUID PENETRANT REPORT", "CONSUMABLE CALCULATE"])
 
 st.sidebar.markdown("---")
-st.sidebar.info("Aplikasi Integrasi: LPI Generator & Volume Cutting/Welding/Coating Calculator.")
+st.sidebar.info("Aplikasi Integrasi: LPI Generator & Volume Calculator.")
 
 if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
     st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant secara otomatis.")
+
+    # SLIDER UNTUK MENGONTROL UKURAN LOGO SECARA UNIFORM (SAMA UNTUK SEMUA)
+    st.sidebar.subheader("📐 Ukuran Logo Master (.docx)")
+    logo_size_setting = st.sidebar.slider("Lebar Semua Logo (Inchi)", min_value=1.0, max_value=2.0, value=1.4, step=0.05)
 
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
     log_col1, log_col2, log_col3 = st.columns(3)
@@ -457,6 +462,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
         generate_layout = st.button("🚀 Generate Screen Layout")
         
     with col_btn2:
+        # Ditambahkan argumen 'logo_width_inch' ke pemanggilan fungsi utama
         docx_buffer = generate_docx_report(
             logo_left_bytes=logo_l_io, logo_right_top_bytes=logo_rt_io, logo_right_bottom_bytes=logo_rb_io,
             client=client, project=project, equipment=equipment, auto_form_no=auto_form_no, 
@@ -465,7 +471,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
             penetrant_method=penetrant_method, removal_method=removal_method,
             brand_name=brand_name, penetrant_type=penetrant_type, developer_type=developer_type,
             cleaner_type=cleaner_type, surface_prep=surface_prep, time_exam=time_exam,
-            scope_exam=scope_exam, data_df=edited_weld_df
+            scope_exam=scope_exam, data_df=edited_weld_df, logo_width_inch=logo_size_setting
         )
         
         st.download_button(
@@ -482,9 +488,9 @@ if main_menu == "LIQUID PENETRANT REPORT":
             <div style="border:2px solid #333; padding:15px; border-radius:5px; background-color:#FAFAFA">
                 <table style="width:100%; border-collapse:collapse; border:none;">
                     <tr>
-                        <td style="width:25%; text-align:center; border-right:1px solid #ccc; padding:10px;"><b>[ LOGO KIRI ]</b></td>
-                        <td style="width:50%; text-align:center; border-right:1px solid #ccc; padding:10px;"><h4>{project.upper()}</h4></td>
-                        <td style="width:25%; text-align:center; padding:10px;"><b>[ LOGO KANAN ATAS ]</b><hr style="margin:5px 0;"><b>[ LOGO KANAN BAWAH ]</b></td>
+                        <td style="width:27%; text-align:center; border-right:1px solid #ccc; padding:10px;"><b>[ LOGO KIRI ]</b></td>
+                        <td style="width:46%; text-align:center; border-right:1px solid #ccc; padding:10px;"><h4>{project.upper()}</h4></td>
+                        <td style="width:27%; text-align:center; padding:10px;"><b>[ LOGO KANAN ATAS ]</b><hr style="margin:5px 0;"><b>[ LOGO KANAN BAWAH ]</b></td>
                     </tr>
                 </table>
                 <table style="width:100%; margin-top:10px; border-top:2px solid #333; font-size:12px;">
@@ -492,7 +498,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
                         <td><b>Date:</b> {date_str}</td>
                         <td><b>Doc No:</b> {doc_no_input if doc_no_input else '-'}</td>
                         <td style="text-align:center;"><b>Rev:</b> {rev_no_input}</td>
-                        <td style="text-align:right; color:#0056b3;"><b>Page:</b> [Auto Dynamic Fields]</td>
+                        <td style="text-align:right; color:#0056b3;"><b>Page:</b> [Auto Dynamic Fields - {logo_size_setting}"]</td>
                     </tr>
                 </table>
             </div>

@@ -15,10 +15,10 @@ from docx.oxml.ns import qn, nsdecls
 st.set_page_config(page_title="Engineering Tools & LPI Report", layout="wide")
 
 # =======================================================================================
-# FUNGSI PEMBANTU UNTUK FORMATTING DATA CELL WORD
+# FUNGSI PEMBANTU FORMATTING XML (UNTUK PAGINATION & LAYOUT TINGKAT LANJUT)
 # =======================================================================================
 def set_cell_margins(cell, top=100, bottom=100, start=100, end=100):
-    """Mengatur padding didalam cell tabel (dalam dxa)"""
+    """Mengatur padding di dalam cell tabel (dalam dxa)"""
     tcPr = cell._tc.get_or_add_tcPr()
     tcMar = OxmlElement('w:tcMar')
     for m, val in [('w:top', top), ('w:bottom', bottom), ('w:left', start), ('w:right', end)]:
@@ -33,8 +33,18 @@ def set_cell_background(cell, fill_hex):
     shading_elm = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), fill_hex))
     cell._tc.get_or_add_tcPr().append(shading_elm)
 
+def prevent_row_split(row):
+    """Mencegah baris tabel terpotong di antara dua halaman (terbelah)"""
+    trPr = row._tr.get_or_add_trPr()
+    trPr.append(parse_xml(r'<w:cantSplit {}/>'.format(nsdecls('w'))))
+
+def set_repeat_header(row):
+    """Mengatur baris tabel agar otomatis diulang di halaman berikutnya jika baris penuh"""
+    trPr = row._tr.get_or_add_trPr()
+    trPr.append(parse_xml(r'<w:tblHeader {}/>'.format(nsdecls('w'))))
+
 # =======================================================================================
-# FUNGSI UNTUK GENERATE FILE WORD (.DOCX) DENGAN KOP STANDAR INTERNASIONAL
+# FUNGSI UNTUK GENERATE FILE WORD (.DOCX) DENGAN SISTEM AUTO-CONTINUE
 # =======================================================================================
 def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no, page_str,
@@ -44,77 +54,74 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     
     doc = Document()
     
-    # Atur Margin Halaman Lebih Proporsional (0.75 Inch / ~1.9 cm)
+    # Atur Margin Halaman Cetak Standar Internasional (0.75 Inch / ~1.9 cm)
     sections = doc.sections
     for section in sections:
         section.top_margin = Inches(0.75)
         section.bottom_margin = Inches(0.75)
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.75)
-        section.page_width = Inches(8.27) # A4
+        section.page_width = Inches(8.27) # Ukuran kertas A4
         section.page_height = Inches(11.69)
 
     # -----------------------------------------------------------------------------------
-    # 1. STRUKTUR KOP UTAMA BERDASARKAN GAMBAR (Tabel Grid)
+    # 1. KOP SURAT UTAMA (Grid Presisi Berdasarkan Gambar)
     # -----------------------------------------------------------------------------------
-    # Total lebar halaman cetak efektif = 8.27 - (0.75 * 2) = 6.77 Inches
     kop_table = doc.add_table(rows=2, cols=3)
     kop_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     kop_table.style = 'Table Grid'
     
-    # Atur Lebar Kolom Kop secara Spesifik
-    # Kolom 0 (Logo Kiri): 1.8" | Kolom 1 (Judul Tengah): 3.1" | Kolom 2 (Logo Kanan Multi): 1.87"
+    # Total lebar cetak efektif kertas A4 dengan margin 0.75" adalah 6.77 Inches
     col_widths = [Inches(1.80), Inches(3.10), Inches(1.87)]
     for row in kop_table.rows:
+        prevent_row_split(row)
         for idx, width in enumerate(col_widths):
             row.cells[idx].width = width
 
-    # Gabungkan baris untuk Kolom 0 dan Kolom 1 (Row 0 dan Row 1 Di-merge)
+    # Menggabungkan baris untuk struktur logo kiri dan judul tengah
     cell_left = kop_table.cell(0, 0).merge(kop_table.cell(1, 0))
     cell_center = kop_table.cell(0, 1).merge(kop_table.cell(1, 1))
-    
-    # Cell Kanan Atas dan Kanan Bawah dibiarkan terpisah
     cell_right_top = kop_table.cell(0, 2)
     cell_right_bottom = kop_table.cell(1, 2)
 
-    # Isi Cell 0: Logo Kiri (Contoh: Trakindo CAT)
+    # Mengisi Logo Kiri
     cell_left.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_left = cell_left.paragraphs[0]
     p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_left_bytes is not None:
-        p_left.add_run().add_picture(logo_left_bytes, width=Inches(1.5))
+        p_left.add_run().add_picture(logo_left_bytes, width=Inches(1.4))
     else:
-        p_left.add_run("[ LOGO KIRI ]").font.color.rgb = RGBColor(150, 150, 150)
+        p_left.add_run("[ LOGO KIRI ]").font.color.rgb = RGBColor(160, 160, 160)
 
-    # Isi Cell 1: Judul Proyek Tengah
+    # Mengisi Judul Tengah
     cell_center.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_center = cell_center.paragraphs[0]
     p_center.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_center = p_center.add_run(str(project).upper())
     run_center.bold = True
-    run_center.font.size = Pt(12)
+    run_center.font.size = Pt(11.5)
     run_center.font.name = 'Arial'
 
-    # Isi Cell 2 (Kanan Atas): Logo Damac Digital
+    # Mengisi Logo Kanan Atas
     cell_right_top.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_rt = cell_right_top.paragraphs[0]
     p_rt.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_right_top_bytes is not None:
-        p_rt.add_run().add_picture(logo_right_top_bytes, width=Inches(1.5))
+        p_rt.add_run().add_picture(logo_right_top_bytes, width=Inches(1.4))
     else:
-        p_rt.add_run("[ LOGO KANAN ATAS ]").font.color.rgb = RGBColor(150, 150, 150)
+        p_rt.add_run("[ LOGO KANAN ATAS ]").font.color.rgb = RGBColor(160, 160, 160)
 
-    # Isi Cell 3 (Kanan Bawah): Logo Cushman & Wakefield
+    # Mengisi Logo Kanan Bawah
     cell_right_bottom.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     p_rb = cell_right_bottom.paragraphs[0]
     p_rb.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if logo_right_bottom_bytes is not None:
-        p_rb.add_run().add_picture(logo_right_bottom_bytes, width=Inches(1.5))
+        p_rb.add_run().add_picture(logo_right_bottom_bytes, width=Inches(1.4))
     else:
-        p_rb.add_run("[ LOGO KANAN BAWAH ]").font.color.rgb = RGBColor(150, 150, 150)
+        p_rb.add_run("[ LOGO KANAN BAWAH ]").font.color.rgb = RGBColor(160, 160, 160)
 
     # -----------------------------------------------------------------------------------
-    # SUB-HEADER METADATA KOP (Date, Doc No, Rev, Page)
+    # SUB-HEADER DOKUMEN KONTROL (Date, Doc No, Rev, Page)
     # -----------------------------------------------------------------------------------
     meta_table = doc.add_table(rows=1, cols=4)
     meta_table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -122,12 +129,13 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     
     meta_widths = [Inches(1.80), Inches(3.10), Inches(0.80), Inches(1.07)]
     meta_cells = meta_table.rows[0].cells
+    prevent_row_split(meta_table.rows[0])
+    
     for idx, width in enumerate(meta_widths):
         meta_cells[idx].width = width
         meta_cells[idx].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-        set_cell_margins(meta_cells[idx], top=60, bottom=60, start=100, end=100)
+        set_cell_margins(meta_cells[idx], top=70, bottom=70, start=100, end=100)
 
-    # Isi Meta Data
     meta_cells[0].paragraphs[0].text = f"Date: {date_str}"
     meta_cells[1].paragraphs[0].text = f"Doc No.: {doc_no if doc_no else '-'}"
     meta_cells[2].paragraphs[0].text = f"Rev. {rev_no}"
@@ -139,11 +147,10 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     meta_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
     meta_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Spacer
-    p_space = doc.add_paragraph()
-    p_space.paragraph_format.space_after = Pt(12)
+    # Spacer halaman
+    doc.add_paragraph().paragraph_format.space_after = Pt(10)
 
-    # Judul Judul Form Utama
+    # Judul Dokumen Form Utama
     h1 = doc.add_paragraph()
     h1_run = h1.add_run("FINAL LIQUID PENETRANT INSPECTION REPORT")
     h1_run.bold = True
@@ -153,13 +160,12 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     h1.paragraph_format.space_after = Pt(12)
 
     # -----------------------------------------------------------------------------------
-    # 2. GENERAL HEADER INFORMATION TABLE
+    # 2. TABEL INFORMASI HEADER UMUM
     # -----------------------------------------------------------------------------------
     table_header = doc.add_table(rows=5, cols=4)
     table_header.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_header.style = 'Table Grid'
     
-    # Atur proporsi lebar kolom form data info
     info_widths = [Inches(1.5), Inches(2.0), Inches(1.5), Inches(1.77)]
     
     headers_data = [
@@ -172,6 +178,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     
     for row_idx, row_data in enumerate(headers_data):
         row_cells = table_header.rows[row_idx].cells
+        prevent_row_split(table_header.rows[row_idx])
         for col_idx, text in enumerate(row_data):
             row_cells[col_idx].width = info_widths[col_idx]
             row_cells[col_idx].text = str(text)
@@ -185,11 +192,9 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
                 p.runs[0].font.bold = True
                 set_cell_background(row_cells[col_idx], "F8F9FA")
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(4)
-
-    # 3. INSPECTION PARAMETERS SUMMARY
+    # 3. INSPECTION PARAMETERS SUMMARY TEXT
     p_param = doc.add_paragraph()
-    p_param.paragraph_format.space_before = Pt(6)
+    p_param.paragraph_format.space_before = Pt(10)
     p_param.paragraph_format.space_after = Pt(12)
     
     params = [
@@ -215,16 +220,19 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     h2.paragraph_format.space_after = Pt(6)
     
     # -----------------------------------------------------------------------------------
-    # 4. DATA RESULT TABLE (SANGAT RAPI)
+    # 4. TABEL HASIL INDIKASI PENGUJIAN (DENGAN MANAJEMEN AUTO-PAGE REPEAT HEADER)
     # -----------------------------------------------------------------------------------
     table_res = doc.add_table(rows=1, cols=7)
     table_res.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_res.style = 'Table Grid'
     
-    res_widths = [Inches(1.8), Inches(0.8), Inches(1.0), Inches(0.5), Inches(0.6), Inches(1.2), Inches(0.87)]
+    res_widths = [Inches(1.8), Inches(0.7), Inches(1.1), Inches(0.5), Inches(0.6), Inches(1.2), Inches(0.87)]
     
-    # Header Tabel Hasil
+    # Render Baris Pertama (Header Judul Kolom Tabel)
     hdr_cells = table_res.rows[0].cells
+    set_repeat_header(table_res.rows[0]) # <--- KUNCI UTAMA: Judul berulang otomatis di halaman baru
+    prevent_row_split(table_res.rows[0])
+    
     headers_col = ["PART NAME", "WELD NO", "THICKNESS (MM)", "ACC", "REJECT", "TYPES OF DISCONTINUITIES", "REMARKS"]
     for i, title_text in enumerate(headers_col):
         hdr_cells[i].width = res_widths[i]
@@ -239,9 +247,12 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         p.runs[0].font.size = Pt(9)
         p.runs[0].font.name = 'Arial'
 
-    # Isi Data Row dari DataFrame
+    # Memasukkan Data Dinamis Baris dari Input User
     for index, row in data_df.iterrows():
-        row_cells = table_res.add_row().cells
+        new_row = table_res.add_row()
+        prevent_row_split(new_row) # <--- KUNCI UTAMA: Baris tidak akan terpotong ditengah kertas terpotong
+        row_cells = new_row.cells
+        
         for idx in range(7):
             row_cells[idx].width = res_widths[idx]
             row_cells[idx].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -255,7 +266,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         row_cells[5].text = str(row["TYPES OF DISCONTINUITIES"])
         row_cells[6].text = str(row["REMARKS"])
         
-        # Center alignment untuk data angka & checkmark status
+        # Center Alignment kolom angka & status penandaan
         for col_idx in [1, 2, 3, 4]:
             row_cells[col_idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
             
@@ -267,14 +278,16 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     doc.add_paragraph().paragraph_format.space_after = Pt(20)
 
     # -----------------------------------------------------------------------------------
-    # 5. SIGNATURE SECTION
+    # 5. HALAMAN AKHIR: BAGIAN VERIFIKASI TANDA TANGAN (4 KOLOM FORMAL SEJAJAR)
     # -----------------------------------------------------------------------------------
-    table_sig = doc.add_table(rows=2, cols=3)
+    table_sig = doc.add_table(rows=2, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
+    prevent_row_split(table_sig.rows[0])
+    prevent_row_split(table_sig.rows[1])
     
-    sig_widths = [Inches(2.25), Inches(2.25), Inches(2.27)]
-    sig_titles = ["CHECKED BY", "REVIEWED BY", "WITNESSED BY"]
+    sig_widths = [Inches(1.69), Inches(1.69), Inches(1.69), Inches(1.70)]
+    sig_titles = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
     
     for idx, title_text in enumerate(sig_titles):
         cell_title = table_sig.rows[0].cells[idx]
@@ -283,7 +296,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         p_t = cell_title.paragraphs[0]
         p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p_t.runs[0].font.bold = True
-        p_t.runs[0].font.size = Pt(9.5)
+        p_t.runs[0].font.size = Pt(9)
         p_t.runs[0].font.name = 'Arial'
         
         cell_box = table_sig.rows[1].cells[idx]
@@ -291,7 +304,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         p_b = cell_box.paragraphs[0]
         p_b.text = "\n\n\n\n__________________\nName:"
         p_b.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p_b.runs[0].font.size = Pt(9.5)
+        p_b.runs[0].font.size = Pt(9)
         p_b.runs[0].font.name = 'Arial'
 
     bio = io.BytesIO()
@@ -314,7 +327,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant secara otomatis.")
 
     # -----------------------------------------------------------------------------------
-    # MULTI COMPONENT LOGO UPLOADER (MENIRU GAMBAR)
+    # MULTI COMPONENT LOGO UPLOADER
     # -----------------------------------------------------------------------------------
     st.subheader("🖼️ Konfigurasi Kop Surat (Multi-Logo Dinamis)")
     log_col1, log_col2, log_col3 = st.columns(3)
@@ -333,9 +346,8 @@ if main_menu == "LIQUID PENETRANT REPORT":
 
     st.markdown("---")
 
-    # Otomatisasi Form Number & Tanggal berdasarkan waktu berjalan
     current_date = datetime.now()
-    date_str = current_date.strftime("%d-%m-%Y") # Sesuai format gambar DD-MM-YYYY
+    date_str = current_date.strftime("12-06-2026") # Menggunakan tanggal hari cetak berjalan formal
     date_display_str = current_date.strftime("%d %B %Y").upper() 
     month_year_slug = current_date.strftime("%B/%Y").upper() 
     auto_form_no = f"05/LPI/DAMAC/{month_year_slug}" 
@@ -441,7 +453,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
 
     st.markdown("---")
     
-    # Kumpulan Pemrosesan Buffer Byte Gambar
+    # Pengolahan Byte IO Gambar
     logo_l_io = io.BytesIO(up_logo_left.getvalue()) if up_logo_left else None
     logo_rt_io = io.BytesIO(up_logo_rt.getvalue()) if up_logo_rt else None
     logo_rb_io = io.BytesIO(up_logo_rb.getvalue()) if up_logo_rb else None
@@ -451,7 +463,6 @@ if main_menu == "LIQUID PENETRANT REPORT":
         generate_layout = st.button("🚀 Generate Screen Layout")
         
     with col_btn2:
-        # Panggil fungsi generate Word dengan 3 opsi logo baru beserta dokumen kontrolnya
         docx_buffer = generate_docx_report(
             logo_left_bytes=logo_l_io, logo_right_top_bytes=logo_rt_io, logo_right_bottom_bytes=logo_rb_io,
             client=client, project=project, equipment=equipment, auto_form_no=auto_form_no, 
@@ -470,17 +481,15 @@ if main_menu == "LIQUID PENETRANT REPORT":
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
-    # Preview Layout di Web Browser
+    # Screen Layout Preview
     if generate_layout:
         st.markdown("## 📄 PREVIEW REPORT LAYOUT")
-        
-        # Simulasi KOP Box di Browser
         st.markdown(
             f"""
             <div style="border:2px solid #333; padding:15px; border-radius:5px; background-color:#FAFAFA">
                 <table style="width:100%; border-collapse:collapse; border:none;">
                     <tr>
-                        <td style="width:25%; text-align:center; border-right:1px solid #ccc; padding:10px;"><b>[ LOGO KIRI ]</b><br><small>Main / Owner</small></td>
+                        <td style="width:25%; text-align:center; border-right:1px solid #ccc; padding:10px;"><b>[ LOGO KIRI ]</b></td>
                         <td style="width:50%; text-align:center; border-right:1px solid #ccc; padding:10px;"><h4>{project.upper()}</h4></td>
                         <td style="width:25%; text-align:center; padding:10px;"><b>[ LOGO KANAN ATAS ]</b><hr style="margin:5px 0;"><b>[ LOGO KANAN BAWAH ]</b></td>
                     </tr>
@@ -508,12 +517,18 @@ if main_menu == "LIQUID PENETRANT REPORT":
         })
         st.table(header_summary)
         
-        st.write(f"**Surface Prep:** ☑ {surface_prep} | **Time of Exam:** ☑ {time_exam} | **Scope:** ☑ {scope_exam}")
         st.write("#### Inspection Results Table")
-        
         display_df = edited_weld_df.copy()
         display_df["ACC"] = display_df["RESULT"].apply(lambda x: "☑" if x == "ACC" else "☐")
         display_df["REJECT"] = display_df["RESULT"].apply(lambda x: "☑" if x == "REJECT" else "☐")
-        
         display_df = display_df[["PART NAME", "WELD NO", "THICKNESS (MM)", "ACC", "REJECT", "TYPES OF DISCONTINUITIES", "REMARKS"]]
         st.dataframe(display_df, use_container_width=True)
+        
+        st.write("#### Signatures")
+        sig_cols = st.columns(4)
+        titles_preview = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
+        for i, title in enumerate(titles_preview):
+            with sig_cols[i]:
+                st.write(f"**{title}**")
+                st.write("\n\n\n__________________")
+                st.write("Name:")

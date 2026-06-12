@@ -52,7 +52,7 @@ def add_xml_field(run, field_name):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # =======================================================================================
-# FUNGSI UTAMA GENERATE .DOCX DENGAN KONTROL UKURAN FOTO LAMPIRAN
+# FUNGSI UTAMA GENERATE .DOCX
 # =======================================================================================
 def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_bottom_bytes, 
                          client, project, equipment, auto_form_no, date_str, doc_no, rev_no,
@@ -133,7 +133,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     else:
         p_rb.add_run("[ LOGO KANAN BAWAH ]").font.color.rgb = RGBColor(160, 160, 160)
 
-    # Baris Metadata
+    # Baris Metadata Kop
     meta_cells = kop_table.rows[2].cells
     for cell in meta_cells:
         cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
@@ -196,7 +196,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
                 p.runs[0].font.bold = True
                 set_cell_background(row_cells[col_idx], "F8F9FA")
 
-    # Parameter Teks
+    # Parameter Pengujian
     p_param = doc.add_paragraph()
     p_param.paragraph_format.space_before = Pt(10)
     p_param.paragraph_format.space_after = Pt(12)
@@ -208,7 +208,7 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
         p_param.add_run(val).font.size = Pt(9.5)
         p_param.runs[-1].font.name = 'Arial'
 
-    # Tabel Hasil Indikasi Las
+    # Tabel Hasil Utama
     h2 = doc.add_paragraph()
     h2.add_run("Inspection Results Table").bold = True
     h2.runs[-1].font.size = Pt(11)
@@ -260,7 +260,9 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             
     doc.add_paragraph().paragraph_format.space_after = Pt(24)
 
-    # Bagian Tanda Tangan (4 Kolom Paralel)
+    # -----------------------------------------------------------------------------------
+    # PERBAIKAN 2 & 3: BAGIAN TANDA TANGAN (RATA KIRI & DITAMBAHKAN FIELD DATE)
+    # -----------------------------------------------------------------------------------
     table_sig = doc.add_table(rows=2, cols=4)
     table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
     table_sig.style = None 
@@ -270,23 +272,29 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
     sig_titles = ["CHECKED / EXAMINED", "REVIEWED", "REVIEWED / WITNESSED", "REVIEWED / WITNESSED"]
     
     for idx, title_text in enumerate(sig_titles):
-        table_sig.rows[0].cells[idx].width = sig_widths[idx]
-        table_sig.rows[0].cells[idx].text = title_text
-        p_t = table_sig.rows[0].cells[idx].paragraphs[0]
-        p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Header Box Title Tanda Tangan
+        cell_title = table_sig.rows[0].cells[idx]
+        cell_title.width = sig_widths[idx]
+        cell_title.text = title_text
+        p_t = cell_title.paragraphs[0]
+        p_t.alignment = WD_ALIGN_PARAGRAPH.LEFT # Berubah ke rata kiri
         p_t.runs[0].font.bold = True
         p_t.runs[0].font.size = Pt(9)
         p_t.runs[0].font.name = 'Arial'
         
-        table_sig.rows[1].cells[idx].width = sig_widths[idx]
-        table_sig.rows[1].cells[idx].paragraphs[0].text = "\n\n\n\n__________________\nName:"
-        p_b = table_sig.rows[1].cells[idx].paragraphs[0]
-        p_b.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        # Isi Box Tempat Tanda Tangan & Nama Terverifikasi
+        cell_box = table_sig.rows[1].cells[idx]
+        cell_box.width = sig_widths[idx]
+        set_cell_margins(cell_box, top=60, bottom=60, start=60, end=60)
+        p_b = cell_box.paragraphs[0]
+        # PERBAIKAN: Format teks tanda tangan diubah ke rata kiri dan ditambah baris Date:
+        p_b.text = "\n\n\n\n_______________________\nName:\nDate:"
+        p_b.alignment = WD_ALIGN_PARAGRAPH.LEFT # Mengunci rata kiri penuh
         p_b.runs[0].font.size = Pt(9)
         p_b.runs[0].font.name = 'Arial'
 
     # -----------------------------------------------------------------------------------
-    # 6. ATTACHMENT: DOKUMENTASI FOTO PER-JOINT SECARA DINAMIS (UKURAN SEDANG)
+    # PERBAIKAN 1: AREA LAMPIRAN FOTO DENGAN PADDING BEBAS MENTOK GARIS
     # -----------------------------------------------------------------------------------
     has_any_photo = any(
         (weld_id in dict_joint_photos) and 
@@ -333,9 +341,12 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             photo_table.rows[1].cells[0].width = Inches(3.38)
             photo_table.rows[1].cells[1].width = Inches(3.39)
             
-            # Slot Foto Kiri: Red Apply (Ukuran dikontrol variabel photo_width_inch)
+            # Slot Foto Kiri: Red Apply
             cell_r_img = photo_table.cell(0, 0)
             cell_r_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            # PERBAIKAN 1: Tambah margin dxa besar di dalam sel agar foto tidak mentok garis tabel
+            set_cell_margins(cell_r_img, top=180, bottom=180, start=180, end=180)
+            
             if photo_data["red"] is not None:
                 cell_r_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
                 cell_r_img.paragraphs[0].add_run().add_picture(photo_data["red"], width=Inches(photo_width_inch))
@@ -350,9 +361,12 @@ def generate_docx_report(logo_left_bytes, logo_right_top_bytes, logo_right_botto
             r_cap_run.font.size = Pt(8.5)
             r_cap_run.font.name = 'Arial'
             
-            # Slot Foto Kanan: Developer Apply (Ukuran dikontrol variabel photo_width_inch)
+            # Slot Foto Kanan: Developer Apply
             cell_d_img = photo_table.cell(0, 1)
             cell_d_img.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            # PERBAIKAN 1: Tambah margin dxa besar di dalam sel agar foto tidak mentok garis tabel
+            set_cell_margins(cell_d_img, top=180, bottom=180, start=180, end=180)
+            
             if photo_data["dev"] is not None:
                 cell_d_img.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
                 cell_d_img.paragraphs[0].add_run().add_picture(photo_data["dev"], width=Inches(photo_width_inch))
@@ -388,11 +402,8 @@ if main_menu == "LIQUID PENETRANT REPORT":
     st.title("📋 Liquid Penetrant Inspection Report Generator")
     st.write("Aplikasi untuk men-generate report hasil pengujian Liquid Penetrant dengan lampiran foto per-joint sambungan.")
 
-    # SIDEBAR KONTROL UKURAN LOGO DAN FOTO LAMPIRAN ATTACHMENT
     st.sidebar.subheader("📐 Ukuran Komponen Master (.docx)")
     logo_size_setting = st.sidebar.slider("Lebar Semua Logo Kop (Inchi)", min_value=1.0, max_value=2.0, value=1.4, step=0.05)
-    
-    # PERBAIKAN: Kontrol Slider Ukuran Foto Lampiran Medium (Default 2.2 Inchi)
     photo_size_setting = st.sidebar.slider("Lebar Foto Lampiran / Attachment (Inchi)", min_value=1.5, max_value=3.2, value=2.2, step=0.05)
 
     # 1. BLOK UNGGAH LOGO PERUSAHAAN (KOP ATAS)
@@ -528,7 +539,6 @@ if main_menu == "LIQUID PENETRANT REPORT":
         generate_layout = st.button("🚀 Generate Screen Layout")
         
     with col_btn2:
-        # PERBAIKAN: Meneruskan variabel photo_size_setting ke fungsi Word Generator
         docx_buffer = generate_docx_report(
             logo_left_bytes=logo_l_io, logo_right_top_bytes=logo_rt_io, logo_right_bottom_bytes=logo_rb_io,
             client=client, project=project, equipment=equipment, auto_form_no=auto_form_no, 
@@ -589,6 +599,7 @@ if main_menu == "LIQUID PENETRANT REPORT":
                 st.write(f"**{title}**")
                 st.write("\n\n\n__________________")
                 st.write("Name:")
+                st.write("Date:")
                 
         # Preview Lampiran Foto Per-Joint di Web
         st.write(f"#### 📸 Attachment Preview: Per-Joint Photos (Lebar Cetak Master: {photo_size_setting}\")")
